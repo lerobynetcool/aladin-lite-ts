@@ -1,0 +1,43 @@
+{
+  "dependencies": {
+    "npm": "^7.22.0"
+  },
+  "name": "aladin-lite",
+  "description": "**An astronomical HiPS visualizer in the browser** <img src=\"aladin-logo.png\" alt=\"Aladin Lite logo\" width=\"220\">",
+  "version": "1.0.0",
+  "main": "index.js",
+  "devDependencies": {
+    "less-plugin-clean-css": "^1.5.1",
+    "lessc": "^1.0.2",
+    "uglify-js": "^3.14.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build":"node build.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cds-astro/aladin-lite.git"
+  },
+  "keywords": [
+    "aladin",
+    "astro",
+    "astronomy",
+    "stars",
+    "galaxy",
+    "map",
+    "sky",
+    "space",
+    "gaia",
+    "hiparcos",
+    "SIMBAD",
+    "2MASS",
+    "imagery"
+  ],
+  "author": "Thomas Boch",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cds-astro/aladin-lite/issues"
+  },
+  "homepage": "https://aladin.u-strasbg.fr/AladinLite/"
+}
