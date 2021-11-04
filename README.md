@@ -19,14 +19,11 @@ Aladin Lite is currently licensed under GPL v3.0
 
 If you think this license might prevent you from using Aladin Lite in your pages/application/portal, please open an issue or [contact us](mailto:cds-question@unistra.fr)
 
-## Building the application
+## Building
 
 1. Clone the repository
-2. Go to the ``scripts``directory
-3. Open the `build.sh` file and adapt paths to ``uglifyjs`` and ``lessc``
-4. Launch ``./build.sh``
-5. Go to directory ``../distrib/latest/`` , type ``python3 -m http.server 42195`` and open your browser at [http://0.0.0.0:42195/](http://0.0.0.0:42195/) to launch the built application
-
+2. run `npm i && npm run build`
+3. ``npx http-server -p 42195`` and open your browser at [http://0.0.0.0:42195/](http://0.0.0.0:42195/) to launch a demo
 
 ## Contributing
 

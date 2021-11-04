@@ -3,7 +3,7 @@
     "npm": "^7.22.0"
   },
   "name": "aladin-lite",
-  "description": "**An astronomical HiPS visualizer in the browser** <img src=\"aladin-logo.png\" alt=\"Aladin Lite logo\" width=\"220\">",
+  "description": "An astronomical HiPS visualizer in the browser",
   "version": "1.0.0",
   "main": "index.js",
   "devDependencies": {
