@@ -48,90 +48,87 @@ Coo.prototype = {
 		}
 	},
 
-  /**
-    * Squared distance between 2 points (= 4.sin<sup>2</sup>(r/2))
-    * @param  pos      another position on the sphere
-    * @return ||pos-this||<sup>2</sup> = 4.sin<sup>2</sup>(r/2)
-   **/
-   dist2: function(pos) {
-//    	if ((this.x==0)&&(this.y==0)&&(this.z==0)) return(0./0.);
-//    	if ((pos.x==0)&&(pos.y==0)&&(pos.z==0)) return(0./0.);
-	var w = pos.x - this.x;
-	var r2 = w * w;
-	w = pos.y - this.y; r2 += w * w;
-	w = pos.z - this.z; r2 += w * w;
-	return r2;
-   },
+	/*
+	 * Squared distance between 2 points (= 4.sin<sup>2</sup>(r/2))
+	 * @param  pos      another position on the sphere
+	 * @return ||pos-this||<sup>2</sup> = 4.sin<sup>2</sup>(r/2)
+	 */
+	dist2: function(pos) {
+		// if ((this.x==0)&&(this.y==0)&&(this.z==0)) return(0./0.);
+		// if ((pos.x==0)&&(pos.y==0)&&(pos.z==0)) return(0./0.);
+		var w = pos.x - this.x;
+		var r2 = w * w;
+		w = pos.y - this.y; r2 += w * w;
+		w = pos.z - this.z; r2 += w * w;
+		return r2;
+	},
 
-   /**
-    * Distance between 2 points on the sphere.
-    * @param  pos another position on the sphere
-    * @return distance in degrees in range [0, 180]
-   **/
-    distance: function(pos) {
-      // Take care of NaN:
-    	if ((pos.x==0)&&(pos.y==0)&&(pos.z==0)) return(0./0.);
-    	if ((this.x==0)&&(this.y==0)&&(this.z==0)) return(0./0.);
-      return (2. * AstroMath.asind(0.5 * Math.sqrt(this.dist2(pos))));
-    },
+	/*
+	 * Distance between 2 points on the sphere.
+	 * @param  pos another position on the sphere
+	 * @return distance in degrees in range [0, 180]
+	 */
+	distance: function(pos) {
+		// Take care of NaN:
+		if ((pos.x==0)&&(pos.y==0)&&(pos.z==0)) return(0./0.);
+		if ((this.x==0)&&(this.y==0)&&(this.z==0)) return(0./0.);
+		return (2. * AstroMath.asind(0.5 * Math.sqrt(this.dist2(pos))));
+	},
 
-   /**
-    * Transform the position into another frame.
-    * @param new_frame	The frame of the resulting position.
-   **/
-   convertTo: function(new_frame) {
+	/*
+	 * Transform the position into another frame.
+	 * @param new_frame	The frame of the resulting position.
+	 */
+	convertTo: function(new_frame) {
 		// Verify first if frames identical -- then nothing to do !
-		if (this.frame.equals(new_frame)) {
-	    		return;
-		}
+		if (this.frame.equals(new_frame)) return;
 
 		// Move via ICRS
 		this.frame.toICRS(this.coo);	// Position now in ICRS
 		new_frame.fromICRS(this.coo);	// Position now in new_frame
 		this.frame = new_frame;
 		this.lon = this.lat = 0./0.;	// Actual angles not recomputed
-   },
+	},
 
-    /**
-     * Rotate a coordinate (apply a rotation to the position).
-     * @param R [3][3] Rotation Matrix
-     */
-    rotate: function(R) {
-      var X, Y, Z;
+	/*
+	 * Rotate a coordinate (apply a rotation to the position).
+	 * @param R [3][3] Rotation Matrix
+	 */
+	rotate: function(R) {
+		var X, Y, Z;
 		if (R == Umatrix3) return;
 		X = R[0][0]*this.x + R[0][1]*this.y + R[0][2]*this.z;
 		Y = R[1][0]*this.x + R[1][1]*this.y + R[1][2]*this.z;
 		Z = R[2][0]*this.x + R[2][1]*this.y + R[2][2]*this.z;
-    	// this.set(X, Y, Z); Not necessary to compute positions each time.
+		// this.set(X, Y, Z); Not necessary to compute positions each time.
 		this.x = X; this.y = Y; this.z = Z;
 		this.lon = this.lat = 0./0.;
-    },
+	},
 
-    /**
-     * Rotate a coordinate (apply a rotation to the position) in reverse direction.
-     * The method is the inverse of rotate.
-     * @param R [3][3] Rotation Matrix
-     */
-    rotate_1: function(R) {
-      var X, Y, Z;
-      if (R == Umatrix3) return;
+	/*
+	 * Rotate a coordinate (apply a rotation to the position) in reverse direction.
+	 * The method is the inverse of rotate.
+	 * @param R [3][3] Rotation Matrix
+	 */
+	rotate_1: function(R) {
+		var X, Y, Z;
+		if (R == Umatrix3) return;
 		X = R[0][0]*this.x + R[1][0]*this.y + R[2][0]*this.z;
 		Y = R[0][1]*this.x + R[1][1]*this.y + R[2][1]*this.z;
 		Z = R[0][2]*this.x + R[1][2]*this.y + R[2][2]*this.z;
-    	// this.set(X, Y, Z); Not necessary to compute positions each time.
+		// this.set(X, Y, Z); Not necessary to compute positions each time.
 		this.x = X; this.y = Y; this.z = Z;
 		this.lon = this.lat = 0./0.;
-    },
+	},
 
-
-    /**
-     * Test equality of Coo.
-     * @param coo Second coordinate to compare with
-     * @return  True if the two coordinates are equal
-     */
-    equals: function(coo) {
+	/**
+	 * Test equality of Coo.
+	 * @param coo Second coordinate to compare with
+	 * @return  True if the two coordinates are equal
+	 */
+	equals: function(coo) {
 		return this.x == coo.x && this.y == coo.y && this.z == coo.z;
-    },
+	},
 
 	/**
 	 * parse a coordinate string. The coordinates can be in decimal or sexagesimal
@@ -150,7 +147,7 @@ Coo.prototype = {
 		}
 		var strlon = str.substring(0,p);
 		var strlat = str.substring(p);
-	
+
 		this.lon = this.parseLon(strlon);	// sets the precision parameter
 		this.lat = this.parseLat(strlat);	// sets the precision parameter
 		return true;
@@ -158,7 +155,7 @@ Coo.prototype = {
 
 	parseLon: function(str) {
 		var str = str.trim();
-        str = str.replace(/:/g, ' ');
+		str = str.replace(/:/g, ' ');
 
 		if (str.indexOf(' ') < 0) {
 			// The longitude is a integer or decimal number
@@ -174,7 +171,7 @@ Coo.prototype = {
 				var tok = stok.nextToken();
 				var dec = tok.indexOf('.');
 				l += parseFloat(tok)*Coo.factor[i];
-//				pr = dec < 0 ? 1 : 2;
+				// pr = dec < 0 ? 1 : 2;
 				switch (i) {
 					case 0: pr = dec < 0 ? 1 : 2; break;
 					case 1: pr = dec < 0 ? 3 : 4; break;
@@ -190,7 +187,7 @@ Coo.prototype = {
 			
 	parseLat: function(str) {
 		var str = str.trim();
-        str = str.replace(/:/g, ' ');
+		str = str.replace(/:/g, ' ');
 
 		var sign;
 		if (str.charAt(0) == '-') {
@@ -250,17 +247,14 @@ Coo.prototype = {
 		}
 		if (this.lat > 0) strlat = '+'+strlat;
 
-		if (options.indexOf('/') >= 0) {
-			return strlon+' '+strlat;
-		} else if (options.indexOf('2') >= 0) {
-			return [strlon, strlat];
-		}
+		if (options.indexOf('/') >= 0) return strlon+' '+strlat;
+		else if (options.indexOf('2') >= 0) return [strlon, strlat];
 		return strlon+strlat;
 	}
-		
+
 }
 
-/**
+/*
  * Distance between 2 points on the sphere.
  * @param coo1 firs	var coslat = AstroMath.cosd(this.lat);
 
@@ -270,20 +264,20 @@ Coo.prototype = {
 t coordinates point
  * @param coo2 second coordinates point
  * @return distance in degrees in range [0, 180]
-**/
+ */
 /*
 Coo.distance = function(Coo coo1, Coo coo2) {
 	return Coo.distance(coo1.lon, coo1.lat, coo2.lon, coo2.lat);
 }
 */
-/**
+/*
  * Distance between 2 points on the sphere.
  * @param lon1 longitude of first point in degrees
  * @param lat1 latitude of first point in degrees
  * @param lon2 longitude of second point in degrees
  * @param lat2 latitude of second point in degrees
  * @return distance in degrees in range [0, 180]
-**/
+ */
 /*
 Coo.distance = function(lon1, lat1, lon2, lat2) {
 	var c1 = AstroMath.cosd(lat1);
@@ -305,7 +299,7 @@ Coo.distance = function(lon1, lat1, lon2, lat2) {
 // Class Tokenizer (similar to Java)
 //===================================
 
-/**
+/*
  * Constructor
  * @param str String to tokenize
  * @param sep token separator char

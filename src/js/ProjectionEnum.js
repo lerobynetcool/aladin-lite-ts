@@ -17,8 +17,6 @@
 //    along with Aladin Lite.
 //
 
-
-
 /******************************************************************************
  * Aladin Lite project
  * 
@@ -28,7 +26,7 @@
  * 
  *****************************************************************************/
  
- ProjectionEnum = {
-    SIN: Projection.PROJ_SIN,
-    AITOFF:  Projection.PROJ_AITOFF
- };
+ProjectionEnum = {
+	SIN: Projection.PROJ_SIN,
+	AITOFF:  Projection.PROJ_AITOFF
+};

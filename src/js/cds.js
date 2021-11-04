@@ -17,8 +17,6 @@
 //    along with Aladin Lite.
 //
 
-
-
 // cds namespace
 
 var cds = cds || {};

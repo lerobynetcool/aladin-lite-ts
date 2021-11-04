@@ -84,13 +84,9 @@ Projection.prototype = {
 			return null;
 		}
 
-		if( this.longitudeIsReversed) {
-            return { X: P[0], Y: -P[1] };
-        }
-        else {
-		    return { X: -P[0], Y: -P[1] };
-        }
-        //return { X: -P[0], Y: -P[1] };
+		if( this.longitudeIsReversed) return { X: P[0], Y: -P[1] };
+		else  return { X: -P[0], Y: -P[1] };
+		//return { X: -P[0], Y: -P[1] };
 	},
 
 	/**
@@ -98,26 +94,20 @@ Projection.prototype = {
 	 * return o = [ ra, dec ]
 	 */
 	unproject: function(X,Y) {
-		if ( ! this.longitudeIsReversed) {
-            X = -X;
-        }
+		if (!this.longitudeIsReversed) X = -X;
 		Y = -Y;
 		var u1 = this.tr_pu(this.PROJECTION, X, Y);	// u1[3]
 		var u2 = this.tr_uu1(u1, this.ROT);	// u2[3]
 		var o = this.tr_uo(u2);	// o[2]
 
 /*
-		if (this.longitudeIsReversed) {
-            return { ra: 360-o[0], dec: o[1] };
-        }
-        else {
-		    return { ra: o[0], dec: o[1] };
-        }
+		if (this.longitudeIsReversed) return { ra: 360-o[0], dec: o[1] };
+		else return { ra: o[0], dec: o[1] };
 */
-        return { ra: o[0], dec: o[1] };
+		return { ra: o[0], dec: o[1] };
 	},
 
-	/**
+	/*
 	 * Compute projections from unit vector
 	 * The center of the projection correspond to u = [1, 0, 0)
 	 * proj = projection system (integer code like _PROJ_MERCATOR_
@@ -230,11 +220,11 @@ Projection.prototype = {
 				if (r != 0)	X = Math.atan2(y,x);
 				pp = [ X, Y ];
 				break;
-	  }
-	  return pp;
+		}
+		return pp;
 	},
 
-	/**
+	/*
 	 * Computes Unit vector from a position in projection centered at position (0,0).
 	 * proj = projection code
 	 * X,Y : coordinates of the point in the projection
