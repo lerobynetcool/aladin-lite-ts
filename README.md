@@ -23,7 +23,7 @@ If you think this license might prevent you from using Aladin Lite in your pages
 
 1. Clone the repository
 2. run `npm i && npm run build`
-3. ``npx http-server -p 42195`` and open your browser at [http://0.0.0.0:42195/](http://0.0.0.0:42195/) to launch a demo
+3. ``python3 -m http.server 42195`` and open your browser at [http://0.0.0.0:42195/](http://0.0.0.0:42195/) to launch a demo
 
 ## Contributing
 
