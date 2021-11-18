@@ -17,189 +17,118 @@
 //    along with Aladin Lite.
 //
 
-
-
 /******************************************************************************
  * Aladin Lite project
- * 
+ *
  * File Box
  *
  * A Box instance is a GUI element providing a div nested
  * in Aladin Lite parent div
- * 
+ *
  * Author: Thomas Boch [CDS]
- * 
+ *
  *****************************************************************************/
-Box = (function() {
 
-	// constructor
-	var Box = function(properties) {
+// return the css class corresponding to the given position and open/close state
+function getChevronClass(position, isOpen) {
+	 if(position=='top'    && isOpen || position=='bottom' && !isOpen) return 'aladin-chevron-up'
+	 if(position=='bottom' && isOpen || position=='top'    && !isOpen) return 'aladin-chevron-down'
+	 if(position=='right'  && isOpen || position=='left'   && !isOpen) return 'aladin-chevron-right'
+	 if(position=='left'   && isOpen || position=='right'  && !isOpen) return 'aladin-chevron-left'
+	 return ''
+}
 
-		this.$parentDiv = $('<div>');
-		this.$parentDiv.addClass('aladin-box');
+export class Box {
+	open
+	position = 'bottom'
+	openCallback  = ()=>{}
+	closeCallback = ()=>{}
 
-		properties = properties || {};
+	html_root = document.createElement('div')
+	html_title_container = document.createElement('div')
+	html_title = document.createElement('span')
+	html_chevron = document.createElement('span')
+	html_content = document.createElement('div')
 
-		this.css = properties.css || {padding: '4px'};
+	constructor(properties = {}) {
+		this.html_root.classList.add('aladin-box')
+		this.html_title.classList.add('aladin-box-title-label')
+		this.html_content.classList.add('aladin-box-content')
 
-		this.position = properties.position || 'bottom'; // position can be bottom, left, top or right
-		if (this.position=='right') {
-			this.css['left'] = 'unset';
-		}
-		this.css[this.position] = '4px';
+		this.html_title_container.appendChild(this.html_chevron)
+		this.html_title_container.appendChild(this.html_title)
+		this.html_root.appendChild(this.html_title_container)
+		this.html_root.appendChild(this.html_content)
 
-		this.contentCss = properties.contentCss || {};
+		let self = this
+		this.html_title_container.addEventListener('click', e => self.open ? self.hide() : self.show() )
 
-		this.title = properties.title || undefined;
+		this.position = properties.position || this.position
+		// let css = properties.css || {padding: '4px'}
+		// if(this.position=='right') css['left'] = 'unset'
+		// this.html_root.css(css)
+		this.html_root.style.padding='4px'
 
-		this.content = properties.content || undefined;
+		// let contentCss = properties.contentCss || {}
+		// this.html_content.css(contentCss)
 
-		this.showHandler = properties.showHandler !== undefined ? properties.showHandler : true;
+		this.setTitle(properties.title || "")
+		if(properties.content) this.setContent(properties.content)
 
-		this.openCallback = properties.openCallback || undefined; // callback called when the user opens the panel
-		this.closeCallback = properties.closeCallback || undefined; // callback called when the user closes the panel
+		this.openCallback  = properties.openCallback  || this.openCallback
+		this.closeCallback = properties.closeCallback || this.closeCallback
 
-		this.changingDim = 'width';
-		if (this.position=='top' || this.position=='bottom') {
-			this.changingDim = 'height';
-		}
+		if( properties.showHandler == false ) this.html_chevron.style.display='none'
 
-		this.open = false;
-		this._render();
-		this.$parentDiv.show();
-		this.open = true;
-		this.hide();
-	};
+		this.open = true
+		this.hide()
+	}
 
-	Box.prototype = {
+	show() {
+		// if(this.open) return
+		this.open = true
+		this._updateChevron()
 
-		show: function() {
-			if (this.open) return;
+		if (this.position=='left' || this.position=='right') this.html_title.style.display=''
+		this.html_content.style.display=''
+		this.html_root.style[this.position] = '4px'
+		this.openCallback()
+	}
 
-			this.open = true;
-			this.$parentDiv.show();
-			this._updateChevron();
+	hide() {
+		// if(!this.open) return
+		this.open = false
+		this._updateChevron()
 
-			if (this.changingDim=='width') this.$parentDiv.find('.aladin-box-title-label').show();
-			var self = this;
-			var options = {};
-			options[this.changingDim] = 'show';
-			var delay = this.changingDim=='width' ? 0 : 400;
-			this.$parentDiv.find('.aladin-box-content').animate(options, delay, function() {
-				self.css[self.position] = '4px';
-				self.updateStyle(self.css);
+		if (this.position=='left' || this.position=='right') this.html_title.style.display='none'
+		this.html_content.style.display='none'
+		this.html_root.style[this.position] = '0px'
+		this.closeCallback()
+	}
 
-				typeof self.openCallback === 'function' && self.openCallback();
-			});
+	// // complety hide parent div
+	// realHide() {
+	// 	this.open = false
+	// 	this.$parentDiv.hide()
+	// }
 
-		},
+	// updateStyle(css) { this.$parentDiv.css(this.css) }
 
-		hide: function() {
-			if (! this.open) return;
+	setContent(content) {
+		this.html_content.innerHTML=content
+	}
 
-			this.open = false;
-			this._updateChevron();
+	setTitle(title) {
+		this.html_title.textContent=title
+		this._updateChevron()
+	}
 
-			if (this.changingDim=='width') {
-				this.$parentDiv.find('.aladin-box-title-label').hide();
-			}
-			var self = this;
-			var options = {};
-			options[this.changingDim] = 'hide';
-			var delay = this.changingDim=='width' ? 0 : 400;
-			this.$parentDiv.find('.aladin-box-content').animate(options, delay, function() {
-				self.css[self.position] = '0px';
-				self.updateStyle(self.css);
+	// enable() { this.$parentDiv.enable() }
+	// disable() { this.$parentDiv.disable() }
 
-				typeof self.closeCallback === 'function' && self.closeCallback();
-			});
-		},
+	_updateChevron() {
+		this.html_chevron.className=`aladin-chevron ${getChevronClass(this.position, this.open)}`
+		this.html_chevron.setAttribute('title', `Click to ${this.open?'hide':'show'} ${this.html_title.textContent} panel`)
+	}
 
-		// complety hide parent div
-		realHide: function() {
-			this.open = false;
-			this.$parentDiv.hide();
-		},
-
-		updateStyle: function(css) {
-			this.css = css;
-			this.$parentDiv.css(css);
-		},
-
-		setContent: function(content) {
-			this.content = content;
-			this._render();
-		},
-
-		setTitle: function(title) {
-			this.title = title;
-			this._render();
-		},
-
-		enable: function() {
-			this.$parentDiv.enable();
-		},
-
-		disable: function() {
-			this.$parentDiv.disable();
-		},
-
-		// fill $parentDiv with HTML corresponding to current state
-		_render: function() {
-			var self = this;
-
-			this.$parentDiv.empty();
-			this.$parentDiv.off();
-
-			var titleDiv = $('<div class="aladin-box-title">');
-			if (this.showHandler) {
-				var chevron = $('<span class="aladin-chevron">');
-				titleDiv.append(chevron);
-			}
-			if (this.title) {
-				titleDiv.append(' <span class="aladin-box-title-label">' + this.title + '</span>');
-			}
-			this.$parentDiv.append(titleDiv);
-			var $content = $('<div class="aladin-box-content">' + (this.content?this.content:'') + '</div>');
-			$content.css(this.contentCss);
-			this.$parentDiv.append($content);
-
-			this._updateChevron();
-			this.updateStyle(this.css);
-
-			titleDiv.on('click', function() {
-				if (self.open) {
-					self.hide();
-				}
-				else {
-					self.show();
-				}
-			});
-		},
-
-		_updateChevron: function() {
-			this.$parentDiv.find('.aladin-chevron').removeClass().addClass('aladin-chevron ' + getChevronClass(this.position, this.open))
-														.attr('title', 'Click to ' + (this.open?'hide ':'show ') + (this.title?this.title:'') + ' panel');
-		}
-	};
-
-	// return the jquery object corresponding to the given position and open/close state
-	var getChevronClass = function(position, isOpen) {
-		if (position=='top' && isOpen || position=='bottom' && !isOpen) {
-			return 'aladin-chevron-up';
-		}
-		if (position=='bottom' && isOpen || position=='top' && !isOpen) {
-			return 'aladin-chevron-down';
-		}
-		if (position=='right' && isOpen || position=='left' && !isOpen) {
-			return 'aladin-chevron-right';
-		}
-		if (position=='left' && isOpen || position=='right' && !isOpen) {
-			return 'aladin-chevron-left';
-		}
-		return '';
-	};
-
-	return Box;
-
-})();
+}
