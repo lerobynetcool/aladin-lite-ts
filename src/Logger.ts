@@ -17,8 +17,8 @@
 //    along with Aladin Lite.
 //
 
-class Logger {
-	static log(action, params) {
+export class Logger {
+	static log(action: any, params: any) {
 		try {
 			let logUrl = "//alasky.unistra.fr/cgi/AladinLiteLogger/log.py"
 			let paramStr = params ? JSON.stringify(params) : ""
