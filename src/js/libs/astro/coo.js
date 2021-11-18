@@ -96,7 +96,6 @@ Coo.prototype = {
 	 */
 	rotate: function(R) {
 		var X, Y, Z;
-		if (R == Umatrix3) return;
 		X = R[0][0]*this.x + R[0][1]*this.y + R[0][2]*this.z;
 		Y = R[1][0]*this.x + R[1][1]*this.y + R[1][2]*this.z;
 		Z = R[2][0]*this.x + R[2][1]*this.y + R[2][2]*this.z;
@@ -112,7 +111,6 @@ Coo.prototype = {
 	 */
 	rotate_1: function(R) {
 		var X, Y, Z;
-		if (R == Umatrix3) return;
 		X = R[0][0]*this.x + R[1][0]*this.y + R[2][0]*this.z;
 		Y = R[0][1]*this.x + R[1][1]*this.y + R[2][1]*this.z;
 		Z = R[0][2]*this.x + R[1][2]*this.y + R[2][2]*this.z;
