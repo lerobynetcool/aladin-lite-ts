@@ -32,7 +32,7 @@ export class CooConversion {
 	// adapted from www.robertmartinayers.org/tools/coordinates.html
 	// radec : array of ra, dec in degrees
 	// return coo in degrees
-	static Transform(radec, matrix) { // returns a radec array of two elements
+	static Transform( radec: number[], matrix: number[] ): [number, number] { // returns a radec array of two elements
 		radec[0] = radec[0]*Math.PI/180
 		radec[1] = radec[1]*Math.PI/180
 		let r0 = [
@@ -54,16 +54,14 @@ export class CooConversion {
 		let cosaa = ( (s0[0]/r) / Math.cos(result[1] ) )
 		let sinaa = ( (s0[1]/r) / Math.cos(result[1] ) )
 		result[0] = Math.atan2 (sinaa,cosaa)
-		if ( result[0] < 0.0 ) result[0] = result[0] + 2*Math.PI
+		if (result[0] < 0.0) result[0] = result[0] + 2*Math.PI
 
-		result[0] = result[0]*180/Math.PI
-		result[1] = result[1]*180/Math.PI
-		return result
+		return [result[0]*180/Math.PI, result[1]*180/Math.PI]
 	}
 
 	// coo : array of lon, lat in degrees
-	static GalacticToJ2000(coo) { return CooConversion.Transform(coo, CooConversion.GALACTIC_TO_J2000) }
+	static GalacticToJ2000(coo: number[]) { return CooConversion.Transform(coo, CooConversion.GALACTIC_TO_J2000) }
 
 	// coo : array of lon, lat in degrees
-	static J2000ToGalactic(coo) { return CooConversion.Transform(coo, CooConversion.J2000_TO_GALACTIC) }
+	static J2000ToGalactic(coo: number[]) { return CooConversion.Transform(coo, CooConversion.J2000_TO_GALACTIC) }
 }
