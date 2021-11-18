@@ -19,38 +19,51 @@
 
 /******************************************************************************
  * Aladin Lite project
- *
+ * 
  * File Box
  *
  * A Box instance is a GUI element providing a div nested
  * in Aladin Lite parent div
- *
+ * 
  * Author: Thomas Boch [CDS]
- *
+ * ts version: Laurent Rohrbasser
  *****************************************************************************/
 
+type cssDirection = 'bottom'|'left'|'top'|'right'
+
 // return the css class corresponding to the given position and open/close state
-function getChevronClass(position, isOpen) {
-	 if(position=='top'    && isOpen || position=='bottom' && !isOpen) return 'aladin-chevron-up'
-	 if(position=='bottom' && isOpen || position=='top'    && !isOpen) return 'aladin-chevron-down'
-	 if(position=='right'  && isOpen || position=='left'   && !isOpen) return 'aladin-chevron-right'
-	 if(position=='left'   && isOpen || position=='right'  && !isOpen) return 'aladin-chevron-left'
-	 return ''
+function getChevronClass(position: cssDirection, isOpen: boolean): string {
+	if(position=='top'    && isOpen || position=='bottom' && !isOpen) return 'aladin-chevron-up'
+	if(position=='bottom' && isOpen || position=='top'    && !isOpen) return 'aladin-chevron-down'
+	if(position=='right'  && isOpen || position=='left'   && !isOpen) return 'aladin-chevron-right'
+	if(position=='left'   && isOpen || position=='right'  && !isOpen) return 'aladin-chevron-left'
+	return ''
+}
+
+type BoxOptions = {
+	// css?: {[key: string]: string},
+	// contentCss?: {[key: string]: string},
+	showHandler?: boolean
+	position?: cssDirection,
+	title?: string,
+	openCallback ?: ()=>void, // callback called when the user opens the panel
+	closeCallback?: ()=>void, // callback called when the user closes the panel
+	content?: string
 }
 
 export class Box {
-	open
-	position = 'bottom'
+	open: boolean
+	position: cssDirection = 'bottom'
 	openCallback  = ()=>{}
 	closeCallback = ()=>{}
 
-	html_root = document.createElement('div')
-	html_title_container = document.createElement('div')
-	html_title = document.createElement('span')
-	html_chevron = document.createElement('span')
-	html_content = document.createElement('div')
+	html_root: HTMLDivElement = document.createElement('div')
+	html_title_container: HTMLDivElement = document.createElement('div')
+	html_title: HTMLSpanElement = document.createElement('span')
+	html_chevron: HTMLSpanElement = document.createElement('span')
+	html_content: HTMLDivElement = document.createElement('div')
 
-	constructor(properties = {}) {
+	constructor(properties: BoxOptions = {}) {
 		this.html_root.classList.add('aladin-box')
 		this.html_title.classList.add('aladin-box-title-label')
 		this.html_content.classList.add('aladin-box-content')
@@ -114,11 +127,11 @@ export class Box {
 
 	// updateStyle(css) { this.$parentDiv.css(this.css) }
 
-	setContent(content) {
+	setContent(content: string) {
 		this.html_content.innerHTML=content
 	}
 
-	setTitle(title) {
+	setTitle(title: string) {
 		this.html_title.textContent=title
 		this._updateChevron()
 	}
