@@ -26,11 +26,20 @@
  *
  *****************************************************************************/
 
-class Source {
-	catalog = null
+import { Catalog } from './Catalog'
+
+export class Source {
+	ra: number
+	dec: number
+	data
+	catalog: Catalog|null = null // TODO : get rid of null with a default catalog
+	marker: boolean
 	isShowing = true
 	isSelected = false
-	constructor(ra, dec, data = {}, options = {}) {
+	popupTitle
+	popupDesc
+	useMarkerDefaultIcon
+	constructor(ra: number, dec: number, data = {}, options: any = {}) {
 		this.ra = ra
 		this.dec = dec
 		this.data = data
@@ -42,7 +51,7 @@ class Source {
 		}
 	}
 
-	setCatalog(catalog) { this.catalog = catalog }
+	setCatalog(catalog: Catalog) { this.catalog = catalog }
 
 	show() {
 		if (this.isShowing) return
@@ -68,27 +77,35 @@ class Source {
 		if (this.catalog) this.catalog.reportChange()
 	}
 
+	static showTable(source: Source) {
+		if(source.catalog) {
+			source.catalog.view.aladin.measurementTable.showMeasurement(source)
+			source.select()
+		}
+	}
+	static showPopup(source: Source) {
+		if(source.catalog) {
+			let view = source.catalog.view
+			view.popup.setTitle('<br><br>')
+			let m = '<div class="aladin-marker-measurement">'
+			m += '<table>'
+			for (let key in source.data) {
+				m += `<tr><td>${key}</td><td>${(source.data as any)[key]}</td></tr>`
+			}
+			m += '</table>'
+			m += '</div>'
+			view.popup.setText(m)
+			view.popup.setSource(source)
+			view.popup.show()
+		}
+	}
 	// function called when a source is clicked. Called by the View object
 	actionClicked() {
-		if (this.catalog && this.catalog.onClick) {
+		if (this.catalog?.onClick) {
 			let view = this.catalog.view
-			if (this.catalog.onClick=='showTable') {
-				view.aladin.measurementTable.showMeasurement(this)
-				this.select()
-			}
-			else if (this.catalog.onClick=='showPopup') {
-				view.popup.setTitle('<br><br>')
-				let m = '<div class="aladin-marker-measurement">'
-				m += '<table>'
-				for (let key in this.data) {
-					m += `<tr><td>${key}</td><td>${this.data[key]}</td></tr>`
-				}
-				m += '</table>'
-				m += '</div>'
-				view.popup.setText(m)
-				view.popup.setSource(this)
-				view.popup.show()
-			}
+			// TODO : onClick should have only one possible type and never string...
+			     if (this.catalog.onClick=='showTable') Source.showTable(this)
+			else if (this.catalog.onClick=='showPopup') Source.showPopup(this)
 			else if (typeof this.catalog.onClick === 'function') {
 				this.catalog.onClick(this)
 				view.lastClickedObject = this
