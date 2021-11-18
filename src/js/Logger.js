@@ -17,24 +17,25 @@
 //    along with Aladin Lite.
 //
 
-// log
-Logger = {};
-
-Logger.log = function(action, params) {
-	try {
-		var logUrl = "//alasky.unistra.fr/cgi/AladinLiteLogger/log.py";
-		var paramStr = "";
-		if (params) paramStr = JSON.stringify(params);
-
-		$.ajax({
-			url: logUrl,
-			data: {"action": action, "params": paramStr, "pageUrl": window.location.href, "referer": document.referrer ? document.referrer : ""},
-			method: 'GET',
-			dataType: 'json' // as alasky supports CORS, we do not need JSONP any longer
-		});
-
+class Logger {
+	static log(action, params) {
+		try {
+			let logUrl = "//alasky.unistra.fr/cgi/AladinLiteLogger/log.py"
+			let paramStr = params ? JSON.stringify(params) : ""
+			$.ajax({
+				url: logUrl,
+				data: {
+					"action": action,
+					"params": paramStr,
+					"pageUrl": window.location.href,
+					"referer": document.referrer ? document.referrer : ""
+				},
+				method: 'GET',
+				dataType: 'json' // as alasky supports CORS, we do not need JSONP any longer
+			})
+		}
+		catch(e) {
+			window.console && console.log('Exception: ' + e)
+		}
 	}
-	catch(e) {
-		window.console && console.log('Exception: ' + e);
-	}
-};
+}
