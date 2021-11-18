@@ -67,8 +67,9 @@ export class Downloader {
 
 		this.nbDownloads++
 		let downloaderRef = this
-		next.img.onload = () => downloaderRef.completeDownload(this, true) // in this context, 'this' is the Image
-		next.img.onerror = e => downloaderRef.completeDownload(this, false) // in this context, 'this' is the Image
+		let img = next.img
+		img.onload  = e => downloaderRef.completeDownload(img, true)
+		img.onerror = e => downloaderRef.completeDownload(img, false)
 		if (next.cors) next.img.crossOrigin = 'anonymous'
 		else if (next.img.crossOrigin !== undefined) next.img.crossOrigin = null
 
