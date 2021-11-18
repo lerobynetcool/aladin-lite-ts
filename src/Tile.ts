@@ -28,7 +28,10 @@
 
 export class Tile {
 
-	constructor(img, url) {
+	img: HTMLImageElement
+	url: string|null
+
+	constructor(img: HTMLImageElement, url: string|null) {
 		this.img = img
 		this.url = url
 	}
@@ -36,7 +39,7 @@ export class Tile {
 	// check whether the image corresponding to the tile is loaded and ready to be displayed
 	//
 	// source : http://www.sajithmr.me/javascript-check-an-image-is-loaded-or-not
-	static isImageOk(img) {
+	static isImageOk(img: HTMLImageElement) {
 		// if (img.allSkyTexture) return true
 
 		if (!img.src) return false
@@ -49,7 +52,6 @@ export class Tile {
 		// However, they do have two very useful properties: naturalWidth and
 		// naturalHeight. These give the true size of the image. If it failed
 		// to load, either of these should be zero.
-
 		if (img.naturalWidth == 0) return false
 
 		// No other way of checking: assume it’s ok.
