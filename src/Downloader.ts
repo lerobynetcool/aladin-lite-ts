@@ -27,17 +27,31 @@
  *
  *****************************************************************************/
 
+import { View } from './View'
+
 let NB_MAX_SIMULTANEOUS_DL = 4
  // TODO : le fading ne marche pas bien actuellement
 // let FADING_ENABLED = false
 // let FADING_DURATION = 700 // in milliseconds
 
+class ToDownload {
+	img: HTMLImageElement
+	url: string
+	cors: boolean
+	constructor(img: HTMLImageElement, url: string, cors: boolean) {
+		this.img =img
+		this.url =url
+		this.cors=cors
+	}
+}
+
 export class Downloader {
 	nbDownloads = 0 // number of current downloads
-	dlQueue = [] // queue of items being downloaded
-	urlsInQueue = {}
+	dlQueue: ToDownload[] = [] // queue of items being downloaded
+	urlsInQueue: {[key: string]: boolean } = {}
+	view: View
 
-	constructor(view) {
+	constructor(view: View) {
 		this.view = view // reference to the view to be able to request redraw
 	}
 
@@ -46,7 +60,7 @@ export class Downloader {
 		this.urlsInQueue = {}
 	}
 
-	requestDownload(img, url, cors) {
+	requestDownload(img: HTMLImageElement, url: string, cors: boolean) {
 		if (url in this.urlsInQueue) return // first check if url already in queue
 		// put in queue
 		this.dlQueue.push({img: img, url: url, cors: cors})
@@ -63,20 +77,20 @@ export class Downloader {
 	startDownloadNext() {
 		// get next in queue
 		let next = this.dlQueue.shift()
-		if (!next) return
+		if(!next) return
 
 		this.nbDownloads++
 		let downloaderRef = this
 		let img = next.img
 		img.onload  = e => downloaderRef.completeDownload(img, true)
 		img.onerror = e => downloaderRef.completeDownload(img, false)
-		if (next.cors) next.img.crossOrigin = 'anonymous'
+		if(next.cors) next.img.crossOrigin = 'anonymous'
 		else if (next.img.crossOrigin !== undefined) next.img.crossOrigin = null
 
 		next.img.src = next.url
 	}
 
-	completeDownload(img, success) {
+	completeDownload(img: HTMLImageElement, success: boolean) {
 		delete this.urlsInQueue[img.src]
 		img.onerror = null
 		img.onload = null
@@ -89,7 +103,7 @@ export class Downloader {
 			// }
 			this.view.requestRedraw()
 		}
-		else img.dlError = true
+		else (img as any).dlError = true
 		this.tryDownload()
 	}
 }
