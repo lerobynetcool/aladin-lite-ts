@@ -21,7 +21,6 @@ export class Coo {
 	constructor(longitude, latitude, prec) {
 		this.lon = longitude
 		this.lat = latitude
-		this.frame = null
 		this.prec = prec
 		this.computeDirCos()
 	}
@@ -78,20 +77,6 @@ export class Coo {
 		if ((pos.x==0)&&(pos.y==0)&&(pos.z==0)) return(0/0)
 		if ((this.x==0)&&(this.y==0)&&(this.z==0)) return(0/0)
 		return (2 * AstroMath.asind(0.5 * Math.sqrt(this.dist2(pos))))
-	}
-
-	/*
-	 * Transform the position into another frame.
-	 * @param new_frame The frame of the resulting position.
-	 */
-	convertTo(new_frame) {
-		// Verify first if frames identical -- then nothing to do !
-		if (this.frame.equals(new_frame)) return
-		// Move via ICRS
-		this.frame.toICRS(this.coo) // Position now in ICRS
-		new_frame.fromICRS(this.coo) // Position now in new_frame
-		this.frame = new_frame
-		this.lon = this.lat = 0/0 // Actual angles not recomputed
 	}
 
 	/*
