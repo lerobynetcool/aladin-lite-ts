@@ -27,88 +27,68 @@
  *
  *****************************************************************************/
 
-Downloader = (function() {
-	var NB_MAX_SIMULTANEOUS_DL = 4;
-	// TODO : le fading ne marche pas bien actuellement
-	var FADING_ENABLED = false;
-	var FADING_DURATION = 700; // in milliseconds
+let NB_MAX_SIMULTANEOUS_DL = 4
+ // TODO : le fading ne marche pas bien actuellement
+// let FADING_ENABLED = false
+// let FADING_DURATION = 700 // in milliseconds
 
-	var Downloader = function(view) {
-		this.view = view; // reference to the view to be able to request redraw
-		this.nbDownloads = 0; // number of current downloads
-		this.dlQueue = []; // queue of items being downloaded
-		this.urlsInQueue = {};
-	};
+export class Downloader {
+	nbDownloads = 0 // number of current downloads
+	dlQueue = [] // queue of items being downloaded
+	urlsInQueue = {}
 
-	Downloader.prototype.emptyQueue = function() {
-		this.dlQueue = [];
-		this.urlsInQueue = {};
-	};
+	constructor(view) {
+		this.view = view // reference to the view to be able to request redraw
+	}
 
-	Downloader.prototype.requestDownload = function(img, url, cors) {
-		// first check if url already in queue
-		if (url in this.urlsInQueue)  return;
+	emptyQueue() {
+		this.dlQueue = []
+		this.urlsInQueue = {}
+	}
+
+	requestDownload(img, url, cors) {
+		if (url in this.urlsInQueue) return // first check if url already in queue
 		// put in queue
-		this.dlQueue.push({img: img, url: url, cors: cors});
-		this.urlsInQueue[url] = 1;
-
-		this.tryDownload();
-	};
+		this.dlQueue.push({img: img, url: url, cors: cors})
+		this.urlsInQueue[url] = true
+		this.tryDownload()
+	}
 
 	// try to download next items in queue if possible
-	Downloader.prototype.tryDownload = function() {
+	tryDownload() {
 		//if (this.dlQueue.length>0 && this.nbDownloads<NB_MAX_SIMULTANEOUS_DL) {
-		while (this.dlQueue.length>0 && this.nbDownloads<NB_MAX_SIMULTANEOUS_DL) {
-			this.startDownloadNext();
-		}
-	};
+		while (this.dlQueue.length>0 && this.nbDownloads<NB_MAX_SIMULTANEOUS_DL) this.startDownloadNext()
+	}
 
-	Downloader.prototype.startDownloadNext = function() {
+	startDownloadNext() {
 		// get next in queue
-		var next = this.dlQueue.shift();
-		if ( ! next) return;
+		let next = this.dlQueue.shift()
+		if (!next) return
 
-		this.nbDownloads++;
-		var downloaderRef = this;
-		next.img.onload = function() {
-			downloaderRef.completeDownload(this, true); // in this context, 'this' is the Image
-		};
+		this.nbDownloads++
+		let downloaderRef = this
+		next.img.onload = () => downloaderRef.completeDownload(this, true) // in this context, 'this' is the Image
+		next.img.onerror = e => downloaderRef.completeDownload(this, false) // in this context, 'this' is the Image
+		if (next.cors) next.img.crossOrigin = 'anonymous'
+		else if (next.img.crossOrigin !== undefined) next.img.crossOrigin = null
 
-		next.img.onerror = function(e) {
-			downloaderRef.completeDownload(this, false); // in this context, 'this' is the Image
-		};
-		if (next.cors) {
-			next.img.crossOrigin = 'anonymous';
-		}
+		next.img.src = next.url
+	}
 
-		else {
-			if (next.img.crossOrigin !== undefined) {
-				delete next.img.crossOrigin;
-			}
-		}
-
-		next.img.src = next.url;
-	};
-
-	Downloader.prototype.completeDownload = function(img, success) {
-		delete this.urlsInQueue[img.src];
-		img.onerror = null;
-		img.onload = null;
-		this.nbDownloads--;
+	completeDownload(img, success) {
+		delete this.urlsInQueue[img.src]
+		img.onerror = null
+		img.onload = null
+		this.nbDownloads--
 		if (success) {
-			if (FADING_ENABLED) {
-				var now = new Date().getTime();
-				img.fadingStart = now;
-				img.fadingEnd = now + FADING_DURATION;
-			}
-			this.view.requestRedraw();
+			// if (FADING_ENABLED) {
+			// 	let now = new Date().getTime()
+			// 	img.fadingStart = now
+			// 	img.fadingEnd = now + FADING_DURATION
+			// }
+			this.view.requestRedraw()
 		}
-		else {
-			img.dlError = true;
-		}
-
-		this.tryDownload();
-	};
-
-	return Downloader;
-})();
+		else img.dlError = true
+		this.tryDownload()
+	}
+}
