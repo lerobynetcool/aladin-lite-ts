@@ -26,18 +26,16 @@
  * 
  *****************************************************************************/
 
-Color = (function() {
+export class Color {
 
-	Color = {};
-	
-	Color.curIdx = 0;
-	Color.colors = ['#ff0000', '#0000ff', '#99cc00', '#ffff00','#000066', '#00ffff', '#9900cc', '#0099cc', '#cc9900', '#cc0099', '#00cc99', '#663333', '#ffcc9a', '#ff9acc', '#ccff33', '#660000', '#ffcc33', '#ff00ff', '#00ff00', '#ffffff'];
+	static curIdx = 0
+	static colors = ['#ff0000', '#0000ff', '#99cc00', '#ffff00','#000066', '#00ffff', '#9900cc', '#0099cc', '#cc9900', '#cc0099', '#00cc99', '#663333', '#ffcc9a', '#ff9acc', '#ccff33', '#660000', '#ffcc33', '#ff00ff', '#00ff00', '#ffffff']
 
-	Color.getNextColor = function() {
-		var c = Color.colors[Color.curIdx % (Color.colors.length)];
-		Color.curIdx++;
-		return c;
-	};
+	static getNextColor() {
+		let c = Color.colors[Color.curIdx % (Color.colors.length)]
+		Color.curIdx++
+		return c
+	}
 
 	/** return most suited (ie readable) color for a label, given a background color
 	 * bkgdColor: color, given as a 'rgb(<r value>, <g value>, <v value>)' . This is returned by $(<element>).css('background-color')
@@ -45,22 +43,20 @@ Color = (function() {
 	 * example call: Color.getLabelColorForBackground('rgb(3, 123, 42)')
 	 * adapted from http://stackoverflow.com/questions/1855884/determine-font-color-based-on-background-color
 	 */
-	Color.getLabelColorForBackground = function(rgbBkgdColor) {
-		var lightLabel = '#eee' 
-		var darkLabel = '#111' 
-		rgb = rgbBkgdColor.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+	static getLabelColorForBackground(rgbBkgdColor) {
+		let lightLabel = '#eee' 
+		let darkLabel = '#111' 
+		let rgb = rgbBkgdColor.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/)
 		if (rgb==null) return darkLabel // we return the dark label color if we can't parse the color
-		r = parseInt(rgb[1]);
-		g = parseInt(rgb[2]);
-		b = parseInt(rgb[3]);
+		let r = parseInt(rgb[1])
+		let g = parseInt(rgb[2])
+		let b = parseInt(rgb[3])
 
-		var d = 0;
+		let d = 0
 		// Counting the perceptive luminance - human eye favors green color... 
-		var a = 1 - ( 0.299 * r + 0.587 * g + 0.114 * b) / 255;
+		let a = 1 - ( 0.299 * r + 0.587 * g + 0.114 * b) / 255
 
-		if (a < 0.5) return darkLabel; // bright color --> dark font
-		else         return lightLabel; // dark color --> light font
-	};
-	
-	return Color;
-})();
+		if (a < 0.5) return darkLabel // bright color --> dark font
+		else         return lightLabel // dark color --> light font
+	}
+}
