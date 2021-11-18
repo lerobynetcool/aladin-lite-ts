@@ -43,7 +43,7 @@ export class Color {
 	 * example call: Color.getLabelColorForBackground('rgb(3, 123, 42)')
 	 * adapted from http://stackoverflow.com/questions/1855884/determine-font-color-based-on-background-color
 	 */
-	static getLabelColorForBackground(rgbBkgdColor) {
+	static getLabelColorForBackground(rgbBkgdColor: string) {
 		let lightLabel = '#eee' 
 		let darkLabel = '#111' 
 		let rgb = rgbBkgdColor.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/)
