@@ -1,27 +1,33 @@
-const ProjectionCode = {
-	PROJ_TAN       : 1 , /* Gnomonic projection */
-	PROJ_TAN2      : 2 , /* Stereographic projection */
-	PROJ_STG       : 2 , /* */
-	PROJ_SIN       : 3 , /* Orthographic */
-	PROJ_SIN2      : 4 , /* Equal-area */
-	PROJ_ZEA       : 4 , /* Zenithal Equal-area */
-	PROJ_ARC       : 5 , /* For Schmidt plates */
-	PROJ_SCHMIDT   : 5 , /* For Schmidt plates */
-	PROJ_AITOFF    : 6 , /* Aitoff Projection */
-	PROJ_AIT       : 6 , /* Aitoff Projection */
-	PROJ_GLS       : 7 , /* Global Sin (Sanson) */
-	PROJ_MERCATOR  : 8 , /* */
-	PROJ_MER       : 8 , /* */
-	PROJ_LAM       : 9 , /* Lambert Projection */
-	PROJ_LAMBERT   : 9 , /* */
-	PROJ_TSC       : 10, /* Tangent Sph. Cube */
-	PROJ_QSC       : 11, /* QuadCube Sph. Cube */
+import { AstroMath } from './astroMath'
+
+import { mat3, vec3, vec2, TXY, RaDec } from '../../Basic'
+
+export enum ProjectionCode {
+	PROJ_TAN       = 1 , /* Gnomonic projection */
+	PROJ_TAN2      = 2 , /* Stereographic projection */
+	PROJ_STG       = 2 , /* */
+	PROJ_SIN       = 3 , /* Orthographic */
+	PROJ_SIN2      = 4 , /* Equal-area */
+	PROJ_ZEA       = 4 , /* Zenithal Equal-area */
+	PROJ_ARC       = 5 , /* For Schmidt plates */
+	PROJ_SCHMIDT   = 5 , /* For Schmidt plates */
+	PROJ_AITOFF    = 6 , /* Aitoff Projection */
+	PROJ_AIT       = 6 , /* Aitoff Projection */
+	PROJ_GLS       = 7 , /* Global Sin (Sanson) */
+	PROJ_MERCATOR  = 8 , /* */
+	PROJ_MER       = 8 , /* */
+	PROJ_LAM       = 9 , /* Lambert Projection */
+	PROJ_LAMBERT   = 9 , /* */
+	PROJ_TSC       = 10, /* Tangent Sph. Cube */
+	PROJ_QSC       = 11, /* QuadCube Sph. Cube */
 }
 
-class Projection {
-	longitudeIsReversed = false
+export class Projection {
+	PROJECTION: ProjectionCode
+	ROT: mat3
+	longitudeIsReversed: boolean
 
-	constructor(lon0, lat0) {
+	constructor(lon0: number, lat0: number) {
 		this.PROJECTION = ProjectionCode.PROJ_TAN
 		this.ROT = this.tr_oR(lon0, lat0)
 		this.longitudeIsReversed = false
@@ -69,30 +75,30 @@ class Projection {
 	 * (ajout T. Boch, 19/02/2013)
 	 *
 	 * */
-	setCenter(lon0, lat0) { this.ROT = this.tr_oR(lon0, lat0) }
+	setCenter(lon0: number, lat0: number) { this.ROT = this.tr_oR(lon0, lat0) }
 
 	/** Reverse the longitude
 	 * If set to true, longitudes will increase from left to right
 	 * */
-	reverseLongitude(b) { this.longitudeIsReversed = b }
+	reverseLongitude(b: boolean) { this.longitudeIsReversed = b }
 
 	/**
 	 * Set the projection to use
 	 * p = projection code
 	 */
-	setProjection(p) { this.PROJECTION = p }
+	setProjection(p: ProjectionCode) { this.PROJECTION = p }
 
 	/**
 	 * Computes the projection of 1 point : ra,dec => X,Y
 	 * alpha, delta = longitude, lattitude
 	 */
-	project(alpha, delta) {
+	project(alpha: number, delta: number): TXY | null {
 		let u1 = this.tr_ou(alpha, delta)       // u1[3]
 		let u2 = this.tr_uu(u1, this.ROT)       // u2[3]
 		let P = this.tr_up(this.PROJECTION, u2) // P[2] = [X,Y]
 		if (P == null) return null
 
-		if (this.longitudeIsReversed) return { X: P[0], Y: -P[1] }
+		if( this.longitudeIsReversed) return { X: P[0], Y: -P[1] }
 		else return { X: -P[0], Y: -P[1] }
 	}
 
@@ -100,7 +106,7 @@ class Projection {
 	 * Computes the coordinates from a projection point : X,Y => ra,dec
 	 * return o = [ ra, dec ]
 	 */
-	unproject(X ,Y) {
+	unproject(X: number,Y: number): RaDec {
 		if (!this.longitudeIsReversed) X = -X
 		Y = -Y
 		let u1 = this.tr_pu(this.PROJECTION, X, Y) || [0,0,0] // u1[3] // TODO : handle null case
@@ -120,7 +126,7 @@ class Projection {
 	 * u[3] = unit vector
 	 * return: an array [x,y] or null
 	 */
-	tr_up(proj, u) {
+	tr_up(proj: ProjectionCode, u: vec3) {
 		let x = u[0]
 		let y = u[1]
 		let z = u[2]
@@ -181,7 +187,7 @@ class Projection {
 				} else {
 					pp = null
 				}
-				break
+			 	break
 
 			case ProjectionCode.PROJ_ARC:
 				if (x <= -1.0) {
@@ -239,7 +245,7 @@ class Projection {
 	 * returns : the unit vector u[3] or a face number for cube projection.
 	 *           null if the point is outside the limits, or if the projection is unknown.
 	 */
-	tr_pu(proj, X, Y) {
+	tr_pu(proj: ProjectionCode, X: number, Y: number): vec3 | null {
 		let r,s,x,y,z
 		switch(proj) {
 			default:
@@ -254,12 +260,12 @@ class Projection {
 				x = 1.0 - r // cos b . cos l/2
 				s = Math.sqrt(1.0 - r/2.0) // sqrt(( 1 + cos b . cos l/2)/2)
 				y = X * s / 2.0
-				z = Y * s
+				z = Y * s 
 				// From (l/2,b) to (l,b)
 				r = AstroMath.hypot( x, y ) // cos b
 				if (r != 0.0) {
 					s = x
-					x = (s*s - y*y)/r
+					x = (s*s - y*y) /r
 					y = 2.0 * s * y/r
 				}
 				break
@@ -354,7 +360,7 @@ class Projection {
 	 * o[2] original angles
 	 * @return rotation matrix
 	 */
-	tr_oR(lon, lat) {
+	tr_oR(lon: number, lat: number): mat3 {
 		let R = new Array(3)
 		R[0] = new Array(3)
 		R[1] = new Array(3)
@@ -375,7 +381,7 @@ class Projection {
 	 * Transformation from polar coordinates to Unit vector
 	 * @return U[3]
 	 */
-	tr_ou(ra, dec) {
+	tr_ou(ra: number, dec: number): vec3 {
 		let u = new Array(3)
 		let cosdec = AstroMath.cosd(dec)
 		u[0] = cosdec * AstroMath.cosd(ra)
@@ -390,7 +396,7 @@ class Projection {
 	 * R[3][3] rotation matrix
 	 * return resulting unit vector u2[3]
 	 */
-	tr_uu(u1, R) {
+	tr_uu(u1: vec3, R: mat3): vec3 {
 		let u2 = new Array(3)
 		let x = u1[0]
 		let y = u1[1]
@@ -407,7 +413,7 @@ class Projection {
 	 * R[3][3] rotation matrix
 	 * return resulting unit vector u2[3]
 	 */
-	tr_uu1(u1, R) {
+	tr_uu1(u1: vec3 , R: mat3): vec3 {
 		let u2 = new Array(3)
 		let x = u1[0]
 		let y = u1[1]
@@ -423,14 +429,14 @@ class Projection {
 	 * u[3] = direction cosines vector
 	 * return o = [ ra, dec ]
 	 */
-	tr_uo(u) {
+	tr_uo(u: vec3): vec2 | null {
 		let x = u[0]
 		let y = u[1]
 		let z = u[2]
 		let r2 = x*x + y*y
 		let ra, dec
 		if (r2  == 0.0) {
-			// in case of poles
+	 		// in case of poles
 			if (z == 0.0) return null
 			ra = 0.0
 			dec = z > 0.0 ? 90.0 : -90.0
@@ -445,3 +451,4 @@ class Projection {
 
 //var ROT
 //var PROJECTION = Projection.PROJ_TAN	// Default projection
+
