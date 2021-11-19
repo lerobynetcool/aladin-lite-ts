@@ -118,9 +118,7 @@ class AstroMath {
 	 * @param x x component of the vector
 	 * @return the angle in degrees
 	 */
-	atan2d(y,x) {
-		return AstroMath.atan2(y,x)*AstroMath.R2D;
-	}
+	atan2d(y,x) { return AstroMath.atan2(y,x)*AstroMath.R2D; }
 
 	/*=========================================================================*/
 	/**
