@@ -249,18 +249,13 @@ class AstroMath {
 	displayMatrix(m) {
 		// Number of rows
 		var nbrows = m.length;
-		// Max column count
-		var nbcols = 0
-		for (var i=0; i<nbrows; i++) {
-			if (m[i].length > nbcols) nbcols = m[i].length;
-		}
+
 		var str = '<table>\n';
 		for (var i=0; i<nbrows; i++) {
 			str += '<tr>';
 			for (var j=0; j<nbrows; j++) {
 				str += '<td>';
-				if (i < m[i].length)
-					str += (m[i][j]).toString();
+				if (i < m[i].length) str += (m[i][j]).toString();
 				str += '</td>';
 			}
 			str += '</td>\n';
