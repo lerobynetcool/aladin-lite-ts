@@ -247,22 +247,8 @@ class AstroMath {
 	};
 
 	displayMatrix(m) {
-		// Number of rows
-		var nbrows = m.length;
-
-		var str = '<table>\n';
-		for (var i=0; i<nbrows; i++) {
-			str += '<tr>';
-			for (var j=0; j<nbrows; j++) {
-				str += '<td>';
-				if (i < m[i].length) str += (m[i][j]).toString();
-				str += '</td>';
-			}
-			str += '</tr>\n';
-		}
-		str += '</table>\n';
-
-		return str;
+		function tag(tagname, content) { return `<${tagname}>${content}</${tagname}>` }
+		return tag('table',m.map(row => tag('tr', row.map(e => tag('td', e.toString())).join(''))).join('\n'))
 	}
 
 }
