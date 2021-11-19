@@ -26,9 +26,17 @@ export type RaDec = {
 // TODO : this is not necessarily best practise, but it really makes sens
 declare global {
 	interface Object {
-		map: <T>(fun: (val: any, key: string) => T ) => T[]
+		forEach: <T>(fun: (val: any, key: string) => T ) => T[]
+		map: <T>(fun: (val: any, key: string) => T ) => {[key: string]: T}
 	}
 }
-Object.prototype.map = function<T>(fun: (val: any, key: string) => T ): T[] {
+Object.prototype.forEach = function<T>(fun: (val: any, key: string) => T ): T[] {
 	return Object.keys(this).map( key => fun((this as any)[key],key) )
+}
+Object.prototype.map = function<T>(fun: (val: any, key: string) => T ): {[key: string]: T} {
+	let keys = Object.keys(this)
+	let res = keys.map( key => fun((this as any)[key],key) )
+	let out: {[key: string]: T} = {}
+	for (let k in keys) out[keys[k]] = res[k]
+	return out
 }
