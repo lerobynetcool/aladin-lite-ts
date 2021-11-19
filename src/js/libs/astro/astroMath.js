@@ -258,7 +258,7 @@ class AstroMath {
 				if (i < m[i].length) str += (m[i][j]).toString();
 				str += '</td>';
 			}
-			str += '</td>\n';
+			str += '</tr>\n';
 		}
 		str += '</table>\n';
 
