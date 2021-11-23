@@ -26,13 +26,15 @@
  *
  *****************************************************************************/
 
-class HealpixGrid {
+import { Vxy } from './Basic'
 
-	redraw(ctx, cornersXYViewMap, fov, norder) {
+export class HealpixGrid {
+	static redraw(ctx: CanvasRenderingContext2D, cornersXYViewMap: Vxy[][], fov: number, norder: number) {
 		// on dessine les lignes
-		ctx.lineWidth = 1;
-		ctx.strokeStyle = "rgb(150,150,220)";
-		ctx.beginPath();
+		ctx.lineWidth = 1
+		ctx.strokeStyle = "rgb(150,150,220)"
+		ctx.beginPath()
+
 		cornersXYViewMap.forEach( cornersXYView => {
 			// let ipix = cornersXYView.ipix
 			// draw pixel
@@ -42,16 +44,15 @@ class HealpixGrid {
 			//ctx.lineTo(cornersXYView[3].vx, cornersXYView[3].vy)
 			//ctx.strokeText(ipix, (cornersXYView[0].vx + cornersXYView[2].vx)/2, (cornersXYView[0].vy + cornersXYView[2].vy)/2)
 		})
-		ctx.stroke();
+		ctx.stroke()
 
 		// on dessine les numéros de pixel HEALpix
-		ctx.strokeStyle="#FFDDDD";
-		ctx.beginPath();
+		ctx.strokeStyle="#FFDDDD"
+		ctx.beginPath()
 		cornersXYViewMap.forEach( cornersXYView => {
-			let ipix = cornersXYView.ipix // TODO: cast as any is not good
+			let ipix = (cornersXYView as any).ipix // TODO: cast as any is not good
 			ctx.strokeText(`${norder}/${ipix}`, (cornersXYView[0].vx + cornersXYView[2].vx)/2, (cornersXYView[0].vy + cornersXYView[2].vy)/2)
 		})
-		ctx.stroke();
-	};
-
+		ctx.stroke()
+	}
 }
