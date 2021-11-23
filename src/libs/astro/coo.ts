@@ -215,6 +215,7 @@ export class Coo {
 		}
 	}
 
+	// TODO : this is kind of messed up... there should be separate functions instead of one that can output very different things
 	/**
 	 * Format coordinates according to the options
 	 * @param options 'd': decimal, 's': sexagésimal, '/': space separated, '2': return [ra,dec] in an array
