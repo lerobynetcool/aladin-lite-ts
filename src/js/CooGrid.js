@@ -41,25 +41,14 @@ class CooGrid {
 	redraw(ctx, projection, frame, width, height, largestDim, zoomFactor, fov) {
 		if (fov>60) return; // currently not supported
 
-		var lonMax = 0, lonMin = 359.9999, latMax = -90, latMin = 90;
-		var lonlat1 = viewxy2lonlat(projection, 0, 0, width, height, largestDim, zoomFactor);
-		var lonlat2 = viewxy2lonlat(projection, width-1, height-1, width, height, largestDim, zoomFactor);
-		lonMin = Math.min(lonlat1.lon, lonlat2.lon);
-		lonMax = Math.max(lonlat1.lon, lonlat2.lon);
-		latMin = Math.min(lonlat1.lat, lonlat2.lat);
-		latMax = Math.max(lonlat1.lat, lonlat2.lat);
-
-		var lonlat3 = viewxy2lonlat(projection, 0, height-1, width, height, largestDim, zoomFactor);
-		lonMin = Math.min(lonMin, lonlat3.lon);
-		lonMax = Math.max(lonMax, lonlat3.lon);
-		latMin = Math.min(latMin, lonlat3.lat);
-		latMax = Math.max(latMax, lonlat3.lat);
-
-		var lonlat4 = viewxy2lonlat(projection, width-1, 0, width, height, largestDim, zoomFactor);
-		lonMin = Math.min(lonMin, lonlat4.lon);
-		lonMax = Math.max(lonMax, lonlat4.lon);
-		latMin = Math.min(latMin, lonlat4.lat);
-		latMax = Math.max(latMax, lonlat4.lat);
+		let lonlat1 = viewxy2lonlat(projection, 0, 0, width, height, largestDim, zoomFactor);
+		let lonlat2 = viewxy2lonlat(projection, width-1, height-1, width, height, largestDim, zoomFactor);
+		let lonlat3 = viewxy2lonlat(projection, 0, height-1, width, height, largestDim, zoomFactor);
+		let lonlat4 = viewxy2lonlat(projection, width-1, 0, width, height, largestDim, zoomFactor);
+		let lonMin = Math.min(lonlat1.lon, lonlat2.lon, lonlat3.lon, lonlat4.lon) // ∈ [0,360]
+		let lonMax = Math.max(lonlat1.lon, lonlat2.lon, lonlat3.lon, lonlat4.lon) // ∈ [0,360]
+		let latMin = Math.min(lonlat1.lat, lonlat2.lat, lonlat3.lat, lonlat4.lat) // ∈ [-90,90]
+		let latMax = Math.max(lonlat1.lat, lonlat2.lat, lonlat3.lat, lonlat4.lat) // ∈ [-90,90]
 
 		var lonDiff = lonMax - lonMin;
 		var latDiff = latMax - latMin;
