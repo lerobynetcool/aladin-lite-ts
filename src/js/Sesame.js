@@ -26,6 +26,10 @@
  * 
  *****************************************************************************/
 
+
+
+
+
 class Sesame {
 	static cache = {}
 	static SESAME_URL = "http://cds.u-strasbg.fr/cgi-bin/nph-sesame.jsonp"
@@ -34,16 +38,16 @@ class Sesame {
 	 *  if successful, callback is called with an object {ra: <ra-value>, dec: <dec-value>}
 	 *  if not successful, errorCallback is called
 	 */
-	static getTargetRADec(target, callback, errorCallback) {
-		if (!callback) return;
+	static getTargetRADec(target, callback, errorCallback = ()=>{}) {
+		if (!callback) return
 
-		var isObjectName = /[a-zA-Z]/.test(target);
+		let isObjectName = /[a-zA-Z]/.test(target)
 
 		// try to parse as a position
-		if ( ! isObjectName) {
-			var coo = new Coo()
+		if ( !isObjectName) {
+			let coo = new Coo()
 			coo.parse(target)
-			if (callback) callback({ra: coo.lon, dec: coo.lat})
+			callback({ra: coo.lon, dec: coo.lat})
 		}
 		// ask resolution by Sesame
 		else {
@@ -54,33 +58,27 @@ class Sesame {
 						dec: data.Target.Resolver.jdedeg
 					})
 				},
-
 				function(data) { // error callback
-					if (errorCallback) errorCallback();
+					errorCallback()
 				}
-		   );
+			)
 		}
 	}
-	
+
 	static resolve(objectName, callbackFunctionSuccess, callbackFunctionError) {
-		var sesameUrl = Sesame.SESAME_URL;
+		let sesameUrl = Sesame.SESAME_URL
 		if (Utils.isHttpsContext()) sesameUrl = sesameUrl.replace('http://', 'https://')
 
 		$.ajax({
-			url: sesameUrl ,
+			url: sesameUrl,
 			data: {"object": objectName},
 			method: 'GET',
 			dataType: 'jsonp',
 			success: function(data) {
-				if (data.Target && data.Target.Resolver && data.Target.Resolver) {
-					callbackFunctionSuccess(data);
-				}
-				else {
-					callbackFunctionError(data);
-				}
+				if (data.Target?.Resolver) callbackFunctionSuccess(data)
+				else                       callbackFunctionError(data)
 			},
 			error: callbackFunctionError
-			})
+		})
 	}
-
 }
