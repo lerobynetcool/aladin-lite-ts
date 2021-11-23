@@ -47,7 +47,7 @@ class URLBuilder {
 	}
 
 	static buildVizieRCSURL(vizCatId, target, radiusDegrees, options) {
-		if (target && (typeof target  === "object")) {
+		if (typeof target  === "object") {
 			if ('ra' in target && 'dec' in target) {
 				var coo = new Coo(target.ra, target.dec, 7)
 				target = coo.format('s')
