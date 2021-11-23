@@ -29,13 +29,11 @@
  * 
  *****************************************************************************/
 
-SimbadPointer = (function() {
+class SimbadPointer {
 
-	SimbadPointer = {};
+	static MIRRORS = ['https://alasky.u-strasbg.fr/cgi/simbad-flat/simbad-quick.py', 'https://alaskybis.u-strasbg.fr/cgi/simbad-flat/simbad-quick.py']; // list of base URL for Simbad pointer service
 
-	SimbadPointer.MIRRORS = ['https://alasky.u-strasbg.fr/cgi/simbad-flat/simbad-quick.py', 'https://alaskybis.u-strasbg.fr/cgi/simbad-flat/simbad-quick.py']; // list of base URL for Simbad pointer service
-
-	SimbadPointer.query = function(ra, dec, radiusDegrees, aladinInstance) {
+	static query(ra, dec, radiusDegrees, aladinInstance) {
 		var coo = new Coo(ra, dec, 7);
 		var params = {Ident: coo.format('s/'), SR: radiusDegrees}
 		var successCallback = function(result) {
@@ -70,6 +68,4 @@ SimbadPointer = (function() {
 
 	};
 
-	return SimbadPointer;
-})();
-	
+}
