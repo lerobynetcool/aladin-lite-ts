@@ -128,8 +128,8 @@ export class Coo {
 		if (p < 0) p = str.indexOf('-')
 		if (p < 0) p = str.indexOf(' ')
 		if (p < 0) {
-			this.lon = 0.0/0.0
-			this.lat = 0.0/0.0
+			this.lon = 0/0
+			this.lat = 0/0
 			this.prec = 0
 			return false
 		}
@@ -169,7 +169,7 @@ export class Coo {
 				i++
 			}
 			this.prec = pr
-			return l*15/3600.0
+			return l*15/3600
 		}
 	}
 
@@ -211,7 +211,7 @@ export class Coo {
 				i++
 			}
 			this.prec = pr
-			return l*sign/3600.0
+			return l*sign/3600
 		}
 	}
 
@@ -230,8 +230,8 @@ export class Coo {
 		} else {
 			// sexagesimal display
 			let hlon = this.lon/15.0
-			strlon = Numbers.toSexagesimal(hlon, this.prec+1, false)
-			strlat = Numbers.toSexagesimal(this.lat, this.prec, false)
+			strlon = Numbers.toSexagesimal(hlon    , this.prec+1, false)
+			strlat = Numbers.toSexagesimal(this.lat, this.prec  , false)
 		}
 		if (this.lat > 0) strlat = '+'+strlat
 
