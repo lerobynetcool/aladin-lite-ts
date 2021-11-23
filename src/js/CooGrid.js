@@ -26,26 +26,19 @@
  *
  *****************************************************************************/
 
-CooGrid = (function() {
-	var CooGrid = function() {
-	};
+function viewxy2lonlat(projection, vx, vy, width, height, largestDim, zoomFactor) {
+	let xy = AladinUtils.viewToXy(vx, vy, width, height, largestDim, zoomFactor)
+	let lonlat
+	try { lonlat = projection.unproject(xy.x, xy.y) }
+	catch(err) { return null }
+	return {lon: lonlat.ra, lat: lonlat.dec};
+}
+let NB_STEPS = 10
+let NB_LINES = 10
 
-	function viewxy2lonlat(projection, vx, vy, width, height, largestDim, zoomFactor) {
-		var xy = AladinUtils.viewToXy(vx, vy, width, height, largestDim, zoomFactor);
-		var lonlat;
-		try {
-			lonlat = projection.unproject(xy.x, xy.y);
-		}
-		catch(err) {
-			return null;
-		}
-		return {lon: lonlat.ra, lat: lonlat.dec};
-	};
+class CooGrid {
 
-	var NB_STEPS = 10;
-	var NB_LINES = 10;
-
-	CooGrid.prototype.redraw = function(ctx, projection, frame, width, height, largestDim, zoomFactor, fov) {
+	redraw(ctx, projection, frame, width, height, largestDim, zoomFactor, fov) {
 		if (fov>60) return; // currently not supported
 
 		var lonMax = 0, lonMin = 359.9999, latMax = -90, latMin = 90;
@@ -128,6 +121,5 @@ CooGrid = (function() {
 			}
 			ctx.stroke();
 		}
-	};
-	return CooGrid;
-})();
+	}
+}
