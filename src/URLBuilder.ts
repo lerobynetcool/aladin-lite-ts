@@ -19,61 +19,58 @@
 
 /******************************************************************************
  * Aladin Lite project
- *
+ * 
  * File URLBuilder
- *
+ * 
  * Author: Thomas Boch[CDS]
- *
+ * 
  *****************************************************************************/
+import { RaDec } from './Basic'
+import { Coo } from './libs/astro/coo'
+import { Utils } from './Utils'
+import { forEach } from './Basic'
 
-class URLBuilder {
-
-	static buildSimbadCSURL(target, radiusDegrees) {
-		if (target && (typeof target  === "object")) {
-			if ('ra' in target && 'dec' in target) {
+export class URLBuilder {
+	static buildSimbadCSURL(target: RaDec|string, radiusDegrees: number) {
+		if(typeof target  === "object") {
+			if('ra' in target && 'dec' in target) {
 				let coo = new Coo(target.ra, target.dec, 7)
-				target = coo.format('s')
+				target = coo.format('s') as string
 			}
 		}
+		let url = 'https://alasky.unistra.fr/cgi/simbad-flat/simbad-cs.py'
 		return `${url}?target=${encodeURIComponent(target)}&SR=${radiusDegrees}&format=votable&SRUNIT=deg&SORTBY=nbref`
 	}
 
-	static buildNEDPositionCSURL(ra, dec, radiusDegrees) {
+	static buildNEDPositionCSURL(ra: number, dec: number, radiusDegrees: number) {
 		return `https://ned.ipac.caltech.edu/cgi-bin/nph-objsearch?search_type=Near+Position+Search&of=xml_main&RA=${ra}&DEC=${dec}'&SR=${radiusDegrees}`
 	}
 
-	static buildNEDObjectCSURL(object, radiusDegrees) {
+	static buildNEDObjectCSURL(object: string, radiusDegrees: number) {
 		return `https://ned.ipac.caltech.edu/cgi-bin/nph-objsearch?search_type=Near+Name+Search&radius=${60*radiusDegrees}&of=xml_main&objname=${object}`
 	}
 
-	static buildVizieRCSURL(vizCatId, target, radiusDegrees, options) {
-		if (typeof target  === "object") {
-			if ('ra' in target && 'dec' in target) {
+	static buildVizieRCSURL(vizCatId: string, target: RaDec|string, radiusDegrees: number, options: any = {}) {
+		if(typeof target === "object") {
+			if('ra' in target && 'dec' in target) {
 				let coo = new Coo(target.ra, target.dec, 7)
-				target = coo.format('s')
+				target = coo.format('s') as string
 			}
 		}
-
 		let maxNbSources = 1e5
-		if (options && options.hasOwnProperty('limit') && Utils.isNumber(options.limit)) {
-			maxNbSources = parseInt(options.limit)
-		}
+		if(options.hasOwnProperty('limit') && Utils.isNumber(options.limit)) maxNbSources = parseInt(options.limit)
 		return `https://vizier.unistra.fr/viz-bin/votable?-source=${vizCatId}&-c=${encodeURIComponent(target)}&-out.max=${maxNbSources}&-c.rd=${radiusDegrees}`
 	}
 
-	static buildSkyBotCSURL(ra, dec, radius, epoch, queryOptions = {}) {
+	// TODO : check types
+	static buildSkyBotCSURL(ra: number, dec: number, radius: number, epoch: number, queryOptions: Object = {}) {
 		let url = 'http://vo.imcce.fr/webservices/skybot/skybotconesearch_query.php?-from=AladinLite'
 		url += `&RA=${encodeURIComponent(ra)}`
 		url += `&DEC=${encodeURIComponent(dec)}`
 		url += `&SR=${encodeURIComponent(radius)}`
 		url += `&EPOCH=${encodeURIComponent(epoch)}`
 
-		for (let key in queryOptions) {
-			if (queryOptions.hasOwnProperty(key)) {
-				url += `&${key}=${encodeURIComponent(queryOptions[key])}`
-			}
-		}
+		url += forEach(queryOptions, (val: any,key) => `&${key}=${encodeURIComponent(val)}`).join('')
 		return url
 	}
-
 }
