@@ -26,19 +26,17 @@
  *
  *****************************************************************************/
 
-ColorMap = (function() {
+class ColorMap {
 
-	// constructor
-	ColorMap = function(view) {
+	constructor(view) {
 		this.view = view;
 		this.reversed = false;
 		this.mapName = 'native';
 		this.sig = this.signature();
 	};
 
-ColorMap.MAPS = {};
-
-	ColorMap.MAPS['eosb'] = {
+	static MAPS = {
+		eosb: {
 			name: 'Eos B',
 			r: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 				0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -74,8 +72,8 @@ ColorMap.MAPS = {};
 				0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 				0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 				0,0,0,0,0,0,0]
-	};
-	ColorMap.MAPS['rainbow'] = {
+		},
+		rainbow: {
 			name: 'Rainbow',
 			r: [0,4,9,13,18,22,27,31,36,40,45,50,54,
 				58,61,64,68,69,72,74,77,79,80,82,83,85,84,86,87,88,86,87,87,87,85,84,84,
@@ -113,8 +111,8 @@ ColorMap.MAPS = {};
 				0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 				0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 				0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-	};
-	ColorMap.MAPS['cubehelix'] = {
+		},
+		cubehelix: {
 			name: 'Cubehelix',
 			r: [0,1,3,4,6,8,9,10,12,13,14,15,17,18,
 				19,20,20,21,22,23,23,24,24,25,25,25,26,26,26,26,26,26,26,26,26,26,26,25,
@@ -157,31 +155,32 @@ ColorMap.MAPS = {};
 				243,243,243,243,243,242,242,242,242,241,241,241,241,240,240,240,239,239,
 				239,239,239,238,238,238,238,238,238,238,238,239,239,239,240,240,240,241,
 				242,242,243,244,245,246,247,248,249,250,252,253,255]
+		}
 	};
 
-	ColorMap.MAPS_CUSTOM = ['cubehelix', 'eosb', 'rainbow'];
-	ColorMap.MAPS_NAMES = ['native', 'grayscale'].concat(ColorMap.MAPS_CUSTOM);
+	static MAPS_CUSTOM = ['cubehelix', 'eosb', 'rainbow'];
+	static MAPS_NAMES = ['native', 'grayscale'].concat(ColorMap.MAPS_CUSTOM);
 
-	ColorMap.prototype.reverse = function(val) {
+	reverse(val) {
 		if (val) this.reversed = val;
 		else this.reversed = ! this.reversed;
 		this.sig = this.signature();
 		this.view.requestRedraw();
 	};
 
-	ColorMap.prototype.signature = function() {
+	signature() {
 		var s = this.mapName;
 		if (this.reversed) s += ' reversed';
 		return s;
 	};
 
-	ColorMap.prototype.update = function(mapName) {
+	update(mapName) {
 		this.mapName = mapName;
 		this.sig = this.signature();
 		this.view.requestRedraw();
 	};
 
-	ColorMap.prototype.apply = function(img) {
+	apply(img) {
 		if ( this.sig=='native' ) return img;
 
 		if (img.cmSig==this.sig) return img.cmImg; // return cached pixels
@@ -242,6 +241,4 @@ ColorMap.MAPS = {};
 
 		return img.cmImg;
 	};
-
-	return ColorMap;
-})();
+}
