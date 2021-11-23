@@ -61,18 +61,16 @@ class URLBuilder {
 		return 'https://vizier.unistra.fr/viz-bin/votable?-source=' + vizCatId + '&-c=' + encodeURIComponent(target) + '&-out.max=' + maxNbSources + '&-c.rd=' + radiusDegrees
 	}
 
-	static buildSkyBotCSURL(ra, dec, radius, epoch, queryOptions) {
+	static buildSkyBotCSURL(ra, dec, radius, epoch, queryOptions = {}) {
 		var url = 'http://vo.imcce.fr/webservices/skybot/skybotconesearch_query.php?-from=AladinLite'
 		url += '&RA=' + encodeURIComponent(ra)
 		url += '&DEC=' + encodeURIComponent(dec)
 		url += '&SR=' + encodeURIComponent(radius)
 		url += '&EPOCH=' + encodeURIComponent(epoch)
 
-		if (queryOptions) {
-			for (var key in queryOptions) {
-				if (queryOptions.hasOwnProperty(key)) {
-						url += '&' + key + '=' + encodeURIComponent(queryOptions[key])
-				}
+		for (var key in queryOptions) {
+			if (queryOptions.hasOwnProperty(key)) {
+				url += `&${key}=${encodeURIComponent(queryOptions[key])}`
 			}
 		}
 		return url
