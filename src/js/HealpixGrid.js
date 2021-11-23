@@ -33,29 +33,24 @@ class HealpixGrid {
 		ctx.lineWidth = 1;
 		ctx.strokeStyle = "rgb(150,150,220)";
 		ctx.beginPath();
-		for (var k=0, len=cornersXYViewMap.length; k<len; k++) {
-			let cornersXYView = cornersXYViewMap[k];
-			ipix = cornersXYView.ipix;
-
+		cornersXYViewMap.forEach( cornersXYView => {
+			// let ipix = cornersXYView.ipix
 			// draw pixel
-			ctx.moveTo(cornersXYView[0].vx, cornersXYView[0].vy);
-			ctx.lineTo(cornersXYView[1].vx, cornersXYView[1].vy);
-			ctx.lineTo(cornersXYView[2].vx, cornersXYView[2].vy);
-			//ctx.lineTo(cornersXYView[3].vx, cornersXYView[3].vy);
-
-			//ctx.strokeText(ipix, (cornersXYView[0].vx + cornersXYView[2].vx)/2, (cornersXYView[0].vy + cornersXYView[2].vy)/2);
-		}
+			ctx.moveTo(cornersXYView[0].vx, cornersXYView[0].vy)
+			ctx.lineTo(cornersXYView[1].vx, cornersXYView[1].vy)
+			ctx.lineTo(cornersXYView[2].vx, cornersXYView[2].vy)
+			//ctx.lineTo(cornersXYView[3].vx, cornersXYView[3].vy)
+			//ctx.strokeText(ipix, (cornersXYView[0].vx + cornersXYView[2].vx)/2, (cornersXYView[0].vy + cornersXYView[2].vy)/2)
+		})
 		ctx.stroke();
 
 		// on dessine les numéros de pixel HEALpix
 		ctx.strokeStyle="#FFDDDD";
 		ctx.beginPath();
-		for (var k=0, len=cornersXYViewMap.length; k<len; k++) {
-			let cornersXYView = cornersXYViewMap[k];
-			ipix = cornersXYView.ipix;
-
-			ctx.strokeText(norder + '/' + ipix, (cornersXYView[0].vx + cornersXYView[2].vx)/2, (cornersXYView[0].vy + cornersXYView[2].vy)/2);
-		}
+		cornersXYViewMap.forEach( cornersXYView => {
+			let ipix = cornersXYView.ipix // TODO: cast as any is not good
+			ctx.strokeText(`${norder}/${ipix}`, (cornersXYView[0].vx + cornersXYView[2].vx)/2, (cornersXYView[0].vy + cornersXYView[2].vy)/2)
+		})
 		ctx.stroke();
 	};
 
