@@ -26,11 +26,9 @@
  *
  *****************************************************************************/
 
-HealpixGrid = (function() {
-	var HealpixGrid = function() {
-	};
+class HealpixGrid {
 
-	HealpixGrid.prototype.redraw = function(ctx, cornersXYViewMap, fov, norder) {
+	redraw(ctx, cornersXYViewMap, fov, norder) {
 		// on dessine les lignes
 		ctx.lineWidth = 1;
 		ctx.strokeStyle = "rgb(150,150,220)";
@@ -62,5 +60,4 @@ HealpixGrid = (function() {
 		ctx.stroke();
 	};
 
-	return HealpixGrid;
-})();
+}
