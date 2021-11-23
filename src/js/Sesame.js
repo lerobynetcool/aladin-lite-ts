@@ -26,10 +26,6 @@
  * 
  *****************************************************************************/
 
-
-
-
-
 class Sesame {
 	static cache = {}
 	static SESAME_URL = "http://cds.u-strasbg.fr/cgi-bin/nph-sesame.jsonp"
@@ -44,7 +40,7 @@ class Sesame {
 		let isObjectName = /[a-zA-Z]/.test(target)
 
 		// try to parse as a position
-		if ( !isObjectName) {
+		if (!isObjectName) {
 			let coo = new Coo()
 			coo.parse(target)
 			callback({ra: coo.lon, dec: coo.lat})
@@ -52,20 +48,18 @@ class Sesame {
 		// ask resolution by Sesame
 		else {
 			Sesame.resolve(target,
-				function(data) { // success callback
+				(data) => { // success callback
 					callback({
 						ra:  data.Target.Resolver.jradeg,
 						dec: data.Target.Resolver.jdedeg
 					})
 				},
-				function(data) { // error callback
-					errorCallback()
-				}
+				(data) => errorCallback() // error callback
 			)
 		}
 	}
 
-	static resolve(objectName, callbackFunctionSuccess, callbackFunctionError) {
+	static resolve(objectName, callbackSuccess, callbackFail) {
 		let sesameUrl = Sesame.SESAME_URL
 		if (Utils.isHttpsContext()) sesameUrl = sesameUrl.replace('http://', 'https://')
 
@@ -74,11 +68,11 @@ class Sesame {
 			data: {"object": objectName},
 			method: 'GET',
 			dataType: 'jsonp',
-			success: function(data) {
-				if (data.Target?.Resolver) callbackFunctionSuccess(data)
-				else                       callbackFunctionError(data)
+			success: (data) => {
+				if (data.Target?.Resolver) callbackSuccess(data)
+				else                       callbackFail(data)
 			},
-			error: callbackFunctionError
+			error: callbackFail
 		})
 	}
 }
