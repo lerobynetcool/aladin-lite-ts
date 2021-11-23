@@ -31,44 +31,44 @@ class URLBuilder {
 	static buildSimbadCSURL(target, radiusDegrees) {
 		if (target && (typeof target  === "object")) {
 			if ('ra' in target && 'dec' in target) {
-				var coo = new Coo(target.ra, target.dec, 7)
+				let coo = new Coo(target.ra, target.dec, 7)
 				target = coo.format('s')
 			}
 		}
-		return 'https://alasky.unistra.fr/cgi/simbad-flat/simbad-cs.py?target=' + encodeURIComponent(target) + '&SR=' + radiusDegrees + '&format=votable&SRUNIT=deg&SORTBY=nbref'
+		return `${url}?target=${encodeURIComponent(target)}&SR=${radiusDegrees}&format=votable&SRUNIT=deg&SORTBY=nbref`
 	}
 
 	static buildNEDPositionCSURL(ra, dec, radiusDegrees) {
-		return 'https://ned.ipac.caltech.edu/cgi-bin/nph-objsearch?search_type=Near+Position+Search&of=xml_main&RA=' + ra + '&DEC=' + dec + '&SR=' + radiusDegrees
+		return `https://ned.ipac.caltech.edu/cgi-bin/nph-objsearch?search_type=Near+Position+Search&of=xml_main&RA=${ra}&DEC=${dec}'&SR=${radiusDegrees}`
 	}
 
 	static buildNEDObjectCSURL(object, radiusDegrees) {
-		return 'https://ned.ipac.caltech.edu/cgi-bin/nph-objsearch?search_type=Near+Name+Search&radius=' + (60 * radiusDegrees) + '&of=xml_main&objname=' + object
+		return `https://ned.ipac.caltech.edu/cgi-bin/nph-objsearch?search_type=Near+Name+Search&radius=${60*radiusDegrees}&of=xml_main&objname=${object}`
 	}
 
 	static buildVizieRCSURL(vizCatId, target, radiusDegrees, options) {
 		if (typeof target  === "object") {
 			if ('ra' in target && 'dec' in target) {
-				var coo = new Coo(target.ra, target.dec, 7)
+				let coo = new Coo(target.ra, target.dec, 7)
 				target = coo.format('s')
 			}
 		}
 
-		var maxNbSources = 1e5
+		let maxNbSources = 1e5
 		if (options && options.hasOwnProperty('limit') && Utils.isNumber(options.limit)) {
 			maxNbSources = parseInt(options.limit)
 		}
-		return 'https://vizier.unistra.fr/viz-bin/votable?-source=' + vizCatId + '&-c=' + encodeURIComponent(target) + '&-out.max=' + maxNbSources + '&-c.rd=' + radiusDegrees
+		return `https://vizier.unistra.fr/viz-bin/votable?-source=${vizCatId}&-c=${encodeURIComponent(target)}&-out.max=${maxNbSources}&-c.rd=${radiusDegrees}`
 	}
 
 	static buildSkyBotCSURL(ra, dec, radius, epoch, queryOptions = {}) {
-		var url = 'http://vo.imcce.fr/webservices/skybot/skybotconesearch_query.php?-from=AladinLite'
-		url += '&RA=' + encodeURIComponent(ra)
-		url += '&DEC=' + encodeURIComponent(dec)
-		url += '&SR=' + encodeURIComponent(radius)
-		url += '&EPOCH=' + encodeURIComponent(epoch)
+		let url = 'http://vo.imcce.fr/webservices/skybot/skybotconesearch_query.php?-from=AladinLite'
+		url += `&RA=${encodeURIComponent(ra)}`
+		url += `&DEC=${encodeURIComponent(dec)}`
+		url += `&SR=${encodeURIComponent(radius)}`
+		url += `&EPOCH=${encodeURIComponent(epoch)}`
 
-		for (var key in queryOptions) {
+		for (let key in queryOptions) {
 			if (queryOptions.hasOwnProperty(key)) {
 				url += `&${key}=${encodeURIComponent(queryOptions[key])}`
 			}
