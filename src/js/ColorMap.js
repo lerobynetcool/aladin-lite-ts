@@ -28,12 +28,16 @@
 
 class ColorMap {
 
+	reversed = false
+	mapName = 'native'
+
 	constructor(view) {
-		this.view = view;
-		this.reversed = false;
-		this.mapName = 'native';
-		this.sig = this.signature();
-	};
+		this.view = view
+		this.sig = this.signature()
+	}
+
+	static MAPS_CUSTOM = ['cubehelix', 'eosb', 'rainbow']
+	static MAPS_NAMES = ['native', 'grayscale'].concat(ColorMap.MAPS_CUSTOM)
 
 	static MAPS = {
 		eosb: {
@@ -156,29 +160,22 @@ class ColorMap {
 				239,239,239,238,238,238,238,238,238,238,238,239,239,239,240,240,240,241,
 				242,242,243,244,245,246,247,248,249,250,252,253,255]
 		}
-	};
-
-	static MAPS_CUSTOM = ['cubehelix', 'eosb', 'rainbow'];
-	static MAPS_NAMES = ['native', 'grayscale'].concat(ColorMap.MAPS_CUSTOM);
+	}
 
 	reverse(val) {
-		if (val) this.reversed = val;
-		else this.reversed = ! this.reversed;
-		this.sig = this.signature();
-		this.view.requestRedraw();
-	};
+		if (val) this.reversed = val
+		else this.reversed = ! this.reversed
+		this.sig = this.signature()
+		this.view.requestRedraw()
+	}
 
-	signature() {
-		var s = this.mapName;
-		if (this.reversed) s += ' reversed';
-		return s;
-	};
+	signature() { return this.mapName + (this.reversed?' reversed':'') }
 
 	update(mapName) {
-		this.mapName = mapName;
-		this.sig = this.signature();
-		this.view.requestRedraw();
-	};
+		this.mapName = mapName
+		this.sig = this.signature()
+		this.view.requestRedraw()
+	}
 
 	apply(img) {
 		if ( this.sig=='native' ) return img;
