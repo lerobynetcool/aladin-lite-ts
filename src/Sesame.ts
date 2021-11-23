@@ -26,7 +26,11 @@
  * 
  *****************************************************************************/
 
-class Sesame {
+import { Utils } from './Utils'
+import { Coo } from './libs/astro/coo'
+import { RaDec } from './Basic'
+
+export class Sesame {
 	static cache = {}
 	static SESAME_URL = "http://cds.u-strasbg.fr/cgi-bin/nph-sesame.jsonp"
 
@@ -34,9 +38,7 @@ class Sesame {
 	 *  if successful, callback is called with an object {ra: <ra-value>, dec: <dec-value>}
 	 *  if not successful, errorCallback is called
 	 */
-	static getTargetRADec(target, callback, errorCallback = ()=>{}) {
-		if (!callback) return
-
+	static getTargetRADec(target: string, callback = (radec: RaDec)=>{}, errorCallback = ()=>{}) {
 		let isObjectName = /[a-zA-Z]/.test(target)
 
 		// try to parse as a position
@@ -59,7 +61,7 @@ class Sesame {
 		}
 	}
 
-	static resolve(objectName, callbackSuccess, callbackFail) {
+	static resolve(objectName: string, callbackSuccess: (data: any)=>void, callbackFail: (data: any)=>void) {
 		let sesameUrl = Sesame.SESAME_URL
 		if (Utils.isHttpsContext()) sesameUrl = sesameUrl.replace('http://', 'https://')
 
