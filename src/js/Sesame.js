@@ -26,28 +26,24 @@
  * 
  *****************************************************************************/
 
-Sesame = (function() {
-	Sesame = {};
-	
-	Sesame.cache = {};
-
-	Sesame.SESAME_URL = "http://cds.u-strasbg.fr/cgi-bin/nph-sesame.jsonp";
+class Sesame {
+	static cache = {}
+	static SESAME_URL = "http://cds.u-strasbg.fr/cgi-bin/nph-sesame.jsonp"
 
 	/** find RA, DEC for any target (object name or position)
 	 *  if successful, callback is called with an object {ra: <ra-value>, dec: <dec-value>}
 	 *  if not successful, errorCallback is called
 	 */
-	Sesame.getTargetRADec = function(target, callback, errorCallback) {
+	static getTargetRADec(target, callback, errorCallback) {
 		if (!callback) return;
 
 		var isObjectName = /[a-zA-Z]/.test(target);
 
 		// try to parse as a position
 		if ( ! isObjectName) {
-			var coo = new Coo();
-
-			coo.parse(target);
-			if (callback) callback({ra: coo.lon, dec: coo.lat});
+			var coo = new Coo()
+			coo.parse(target)
+			if (callback) callback({ra: coo.lon, dec: coo.lat})
 		}
 		// ask resolution by Sesame
 		else {
@@ -56,7 +52,7 @@ Sesame = (function() {
 					callback({
 						ra:  data.Target.Resolver.jradeg,
 						dec: data.Target.Resolver.jdedeg
-					});
+					})
 				},
 
 				function(data) { // error callback
@@ -64,9 +60,9 @@ Sesame = (function() {
 				}
 		   );
 		}
-	};
+	}
 	
-	Sesame.resolve = function(objectName, callbackFunctionSuccess, callbackFunctionError) {
+	static resolve(objectName, callbackFunctionSuccess, callbackFunctionError) {
 		var sesameUrl = Sesame.SESAME_URL;
 		if (Utils.isHttpsContext()) sesameUrl = sesameUrl.replace('http://', 'https://')
 
@@ -84,8 +80,7 @@ Sesame = (function() {
 				}
 			},
 			error: callbackFunctionError
-			});
-	};
-	return Sesame;
-})();
+			})
+	}
 
+}
