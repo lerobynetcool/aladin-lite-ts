@@ -126,7 +126,7 @@ export class Projection {
 	 * u[3] = unit vector
 	 * return: an array [x,y] or null
 	 */
-	tr_up(proj: ProjectionCode, u: vec3) {
+	tr_up(proj: ProjectionCode, u: vec3): number[]|null {
 		let x = u[0]
 		let y = u[1]
 		let z = u[2]
@@ -451,4 +451,3 @@ export class Projection {
 
 //var ROT
 //var PROJECTION = Projection.PROJ_TAN	// Default projection
-
