@@ -44,9 +44,6 @@ function viewxy2lonlat(projection: Projection, vx: number, vy: number, width: nu
 	return {lon: lonlat.ra, lat: lonlat.dec}
 }
 
-let NB_STEPS = 10
-let NB_LINES = 10
-
 export class CooGrid {
 
 	redraw(ctx: CanvasRenderingContext2D, projection: Projection, frame: undefined, width: number, height: number, largestDim: number, zoomFactor: number, fov: number) {
