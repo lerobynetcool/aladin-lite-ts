@@ -25,8 +25,10 @@
  * Author: Thomas Boch[CDS]
  * 
  *****************************************************************************/
- 
-ProjectionEnum = {
-	SIN: Projection.PROJ_SIN,
-	AITOFF:  Projection.PROJ_AITOFF
-};
+
+import { ProjectionCode } from './libs/astro/projection'
+
+export enum ProjectionEnum {
+	SIN    = ProjectionCode.PROJ_SIN,
+	AITOFF = ProjectionCode.PROJ_AITOFF,
+}
