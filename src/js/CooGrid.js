@@ -50,65 +50,63 @@ class CooGrid {
 		let latMin = Math.min(lonlat1.lat, lonlat2.lat, lonlat3.lat, lonlat4.lat) // ∈ [-90,90]
 		let latMax = Math.max(lonlat1.lat, lonlat2.lat, lonlat3.lat, lonlat4.lat) // ∈ [-90,90]
 
-		var lonDiff = lonMax - lonMin;
-		var latDiff = latMax - latMin;
+		let lonDiff = lonMax - lonMin
+		let latDiff = latMax - latMin
 
-		var LON_STEP, LAT_STEP;
+		let LON_STEP, LAT_STEP
 		if (fov>10) {
-			LON_STEP = 4;
-			LAT_STEP = 4;
+			LON_STEP = 4
+			LAT_STEP = 4
 		}
 		else if (fov>1) {
-			LON_STEP = 1;
-			LAT_STEP = 1;
+			LON_STEP = 1
+			LAT_STEP = 1
 		}
 		else if (fov>0.1) {
-			LON_STEP = 0.1;
-			LAT_STEP = 0.1;
+			LON_STEP = 0.1
+			LAT_STEP = 0.1
 		}
 		else {
-			LON_STEP = 0.01;
-			LAT_STEP = 0.01;
+			LON_STEP = 0.01
+			LAT_STEP = 0.01
 		}
 
-		var lonStart = Math.round(lonMin % LON_STEP) * (LON_STEP);
-		var latStart = Math.round(latMin % LAT_STEP) * (LAT_STEP);
+		let lonStart = Math.round(lonMin % LON_STEP) * (LON_STEP)
+		let latStart = Math.round(latMin % LAT_STEP) * (LAT_STEP)
 
-		ctx.lineWidth = 1;
-		ctx.strokeStyle = "rgb(120,120,255)";
+		ctx.lineWidth = 1
+		ctx.strokeStyle = "rgb(120,120,255)"
 		// draw iso-latitudes lines
-		for (var lat=latStart; lat<latMax+LAT_STEP; lat+=LAT_STEP) {
-			ctx.beginPath();
+		for (let lat=latStart; lat<latMax+LAT_STEP; lat+=LAT_STEP) {
+			ctx.beginPath()
 
-			var vxy;
-			vxy = AladinUtils.radecToViewXy(lonMin, lat, projection, CooFrameEnum.J2000, width, height, largestDim, zoomFactor);
-			if (!vxy) continue;
-			ctx.moveTo(vxy.vx, vxy.vy);
-			var k = 0;
-			for (var lon=lonMin; lon<lonMax+LON_STEP; lon+=lonDiff/10) {
-				k++;
-				vxy = AladinUtils.radecToViewXy(lon, lat, projection, CooFrameEnum.J2000, width, height, largestDim, zoomFactor);
-				ctx.lineTo(vxy.vx, vxy.vy);
-				if (k==3) ctx.strokeText(lat.toFixed(2), vxy.vx, vxy.vy-2);
+			let vxy = AladinUtils.radecToViewXy(lonMin, lat, projection, CooFrameEnum.J2000, width, height, largestDim, zoomFactor)
+			if (!vxy) continue
+			ctx.moveTo(vxy.vx, vxy.vy)
+			let k = 0
+			for (let lon=lonMin; lon<lonMax+LON_STEP; lon+=lonDiff/10) {
+				k++
+				vxy = AladinUtils.radecToViewXy(lon, lat, projection, CooFrameEnum.J2000, width, height, largestDim, zoomFactor)
+				ctx.lineTo(vxy.vx, vxy.vy)
+				if (k==3) ctx.strokeText(lat.toFixed(2), vxy.vx, vxy.vy-2)
 			}
-			ctx.stroke();
+			ctx.stroke()
 		}
 
-		for (var lon=lonStart; lon<lonMax+LON_STEP; lon+=LON_STEP) {
+		for (let lon=lonStart; lon<lonMax+LON_STEP; lon+=LON_STEP) {
 			ctx.beginPath();
 
-			var vxy;
-			vxy = AladinUtils.radecToViewXy(lon, latMin, projection, CooFrameEnum.J2000, width, height, largestDim, zoomFactor);
-			if (!vxy) continue;
-			ctx.moveTo(vxy.vx, vxy.vy);
-			var k = 0;
-			for (var lat=latMin; lat<latMax+LAT_STEP; lat+=latDiff/10) {
-				k++;
-				vxy = AladinUtils.radecToViewXy(lon, lat, projection, CooFrameEnum.J2000, width, height, largestDim, zoomFactor);
-				ctx.lineTo(vxy.vx, vxy.vy);
-				if (k==3) ctx.strokeText(lon.toFixed(2), vxy.vx, vxy.vy-2);
+			let vxy = AladinUtils.radecToViewXy(lon, latMin, projection, CooFrameEnum.J2000, width, height, largestDim, zoomFactor)
+			if (!vxy) continue
+			ctx.moveTo(vxy.vx, vxy.vy)
+			let k = 0
+			for (let lat=latMin; lat<latMax+LAT_STEP; lat+=latDiff/10) {
+				k++
+				vxy = AladinUtils.radecToViewXy(lon, lat, projection, CooFrameEnum.J2000, width, height, largestDim, zoomFactor)
+				ctx.lineTo(vxy.vx, vxy.vy)
+				if (k==3) ctx.strokeText(lon.toFixed(2), vxy.vx, vxy.vy-2)
 			}
-			ctx.stroke();
+			ctx.stroke()
 		}
 	}
 }
