@@ -30,10 +30,11 @@ class ColorMap {
 
 	reversed = false
 	mapName = 'native'
+	signature() { return this.mapName + (this.reversed?' reversed':'') }
+	get sig() { return this.signature() }
 
 	constructor(view) {
 		this.view = view
-		this.sig = this.signature()
 	}
 
 	static MAPS_CUSTOM = ['cubehelix', 'eosb', 'rainbow']
@@ -165,15 +166,11 @@ class ColorMap {
 	reverse(val) {
 		if (val) this.reversed = val
 		else this.reversed = ! this.reversed
-		this.sig = this.signature()
 		this.view.requestRedraw()
 	}
 
-	signature() { return this.mapName + (this.reversed?' reversed':'') }
-
 	update(mapName) {
 		this.mapName = mapName
-		this.sig = this.signature()
 		this.view.requestRedraw()
 	}
 
