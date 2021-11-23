@@ -26,21 +26,33 @@
  *
  *****************************************************************************/
 
-class ColorMap {
+import { AladinUtils } from './AladinUtils'
+import { View } from './View'
+
+export enum MapName {
+	cubehelix = 'cubehelix',
+	eosb = 'eosb',
+	rainbow = 'rainbow',
+	native = 'native',
+	grayscale = 'grayscale',
+}
+
+export class ColorMap {
 
 	reversed = false
-	mapName = 'native'
+	mapName: MapName = MapName.native
 	signature() { return this.mapName + (this.reversed?' reversed':'') }
 	get sig() { return this.signature() }
 
-	constructor(view) {
-		this.view = view
-	}
+	view: View
+	// constructor
+	constructor(view: View) { this.view = view }
 
-	static MAPS_CUSTOM = ['cubehelix', 'eosb', 'rainbow']
-	static MAPS_NAMES = ['native', 'grayscale'].concat(ColorMap.MAPS_CUSTOM)
+	static MAPS_CUSTOM: MapName[] = [MapName.cubehelix, MapName.eosb, MapName.rainbow]
+	static MAPS_NAMES: MapName[] = [MapName.native, MapName.grayscale].concat(ColorMap.MAPS_CUSTOM)
 
-	static MAPS = {
+	// TODO : should be {[key: MapName]: ... } but compiler doesn't allow it
+	static MAPS: {[key: string]: {name:string,r:number[],g:number[],b:number[]}} = {
 		eosb: {
 			name: 'Eos B',
 			r: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -163,76 +175,71 @@ class ColorMap {
 		}
 	}
 
-	reverse(val) {
+	reverse(val: boolean) {
 		if (val) this.reversed = val
 		else this.reversed = ! this.reversed
 		this.view.requestRedraw()
 	}
 
-	update(mapName) {
+	update(mapName: MapName) {
 		this.mapName = mapName
 		this.view.requestRedraw()
 	}
 
-	apply(img) {
-		if ( this.sig=='native' ) return img;
+	apply(img: HTMLCanvasElement): HTMLCanvasElement {
+		if (this.sig=='native') return img
+		if (this.sig==(img as any).cmSig) return (img as any).cmImg // return cached pixels
+		let canvas: HTMLCanvasElement = document.createElement("canvas")
+		canvas.width  = img.width  as number // TODO : potential type incompatibility
+		canvas.height = img.height as number // TODO : potential type incompatibility
+		let ctx = canvas.getContext("2d") as CanvasRenderingContext2D // assume no error
+		ctx.drawImage(img, 0, 0)
 
-		if (img.cmSig==this.sig) return img.cmImg; // return cached pixels
-
-		var canvas = document.createElement("canvas");
-		canvas.width = img.width;
-		canvas.height = img.height;
-		var ctx = canvas.getContext("2d");
-		ctx.drawImage(img, 0, 0);
-
-		var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-		var pixelData = imageData.data;
-		var length = pixelData.length;
-		var a, b, c;
-		var switchCase = 3;
-		if (this.mapName=='grayscale')                          switchCase = 1;
-		else if (ColorMap.MAPS_CUSTOM.indexOf(this.mapName)>=0) switchCase = 2;
-		for (var i = 0; i < length; i+= 4) {
+		let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+		let pixelData = imageData.data
+		let length = pixelData.length
+		let a, b, c
+		let switchCase = 3
+		if (this.mapName==MapName.grayscale)                    switchCase = 1
+		else if (ColorMap.MAPS_CUSTOM.indexOf(this.mapName)>=0) switchCase = 2
+		for (let i = 0; i < length; i+= 4) {
 			switch(switchCase) {
 				case 1:
-					a = b = c = AladinUtils.myRound((pixelData[i]+pixelData[i+1]+pixelData[i+2])/3);
-					break;
+					a = b = c = AladinUtils.myRound((pixelData[i]+pixelData[i+1]+pixelData[i+2])/3)
+					break
 				case 2:
 					if (this.reversed) {
-						a = ColorMap.MAPS[this.mapName].r[255-pixelData[i]];
-						b = ColorMap.MAPS[this.mapName].g[255-pixelData[i+1]];
-						c = ColorMap.MAPS[this.mapName].b[255-pixelData[i+2]];
+						a = ColorMap.MAPS[this.mapName].r[255-pixelData[i+0]]
+						b = ColorMap.MAPS[this.mapName].g[255-pixelData[i+1]]
+						c = ColorMap.MAPS[this.mapName].b[255-pixelData[i+2]]
 					}
 					else {
-						a = ColorMap.MAPS[this.mapName].r[pixelData[i]];
-						b = ColorMap.MAPS[this.mapName].g[pixelData[i+1]];
-						c = ColorMap.MAPS[this.mapName].b[pixelData[i+2]];
+						a = ColorMap.MAPS[this.mapName].r[pixelData[i+0]]
+						b = ColorMap.MAPS[this.mapName].g[pixelData[i+1]]
+						c = ColorMap.MAPS[this.mapName].b[pixelData[i+2]]
 					}
-					break;
+					break
 				default:
-					a = pixelData[i];
-					b = pixelData[i + 1];
-					c = pixelData[i + 2];
-
+					a = pixelData[i+0]
+					b = pixelData[i+1]
+					c = pixelData[i+2]
 			}
 			if (switchCase!=2 && this.reversed) {
-				a = 255-a;
-				b = 255-b;
-				c = 255-c;
-
+				a = 255-a
+				b = 255-b
+				c = 255-c
 			}
-			pixelData[i]     = a;
-			pixelData[i + 1] = b;
-			pixelData[i + 2] = c;
-
+			pixelData[i]     = a
+			pixelData[i + 1] = b
+			pixelData[i + 2] = c
 		}
-		imageData.data = pixelData;
-		ctx.putImageData(imageData, 0, 0);
+		(imageData as any).data = pixelData // TODO : potential error : this is a read only field
+		ctx.putImageData(imageData, 0, 0)
 
 		// cache image with color map applied
-		img.cmSig = this.sig;
-		img.cmImg = canvas;
+		;(img as any).cmSig = this.sig
+		;(img as any).cmImg = canvas
 
-		return img.cmImg;
-	};
+		return (img as any).cmImg
+	}
 }
