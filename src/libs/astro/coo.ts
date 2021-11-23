@@ -21,7 +21,7 @@ export class Coo {
 	 * @param prec precision
 	 * (8: 1/1000th sec, 7: 1/100th sec, 6: 1/10th sec, 5: sec, 4: 1/10th min, 3: min, 2: 1/10th deg, 1: deg
 	 */
-	constructor(longitude: number, latitude: number, prec: number) {
+	constructor(longitude = 0, latitude = 0, prec = 2) { // TODO : check if these default value are acceptable
 		this.lon = longitude
 		this.lat = latitude
 		this.prec = prec
