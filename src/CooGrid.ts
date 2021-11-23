@@ -26,29 +26,41 @@
  *
  *****************************************************************************/
 
-function viewxy2lonlat(projection, vx, vy, width, height, largestDim, zoomFactor) {
+import { AladinUtils } from './AladinUtils'
+import { CooFrameEnum } from './CooFrameEnum'
+import { Projection } from './libs/astro/projection'
+import { Vxy } from './Basic'
+
+type LonLat = {
+	lon: number,
+	lat: number,
+}
+
+function viewxy2lonlat(projection: Projection, vx: number, vy: number, width: number, height: number, largestDim: number, zoomFactor: number): LonLat|null {
 	let xy = AladinUtils.viewToXy(vx, vy, width, height, largestDim, zoomFactor)
 	let lonlat
 	try { lonlat = projection.unproject(xy.x, xy.y) }
 	catch(err) { return null }
-	return {lon: lonlat.ra, lat: lonlat.dec};
+	return {lon: lonlat.ra, lat: lonlat.dec}
 }
+
 let NB_STEPS = 10
 let NB_LINES = 10
 
-class CooGrid {
+export class CooGrid {
 
-	redraw(ctx, projection, frame, width, height, largestDim, zoomFactor, fov) {
-		if (fov>60) return; // currently not supported
+	redraw(ctx: CanvasRenderingContext2D, projection: Projection, frame: undefined, width: number, height: number, largestDim: number, zoomFactor: number, fov: number) {
+		if (fov>60) return // currently not supported
 
-		let lonlat1 = viewxy2lonlat(projection, 0, 0, width, height, largestDim, zoomFactor);
-		let lonlat2 = viewxy2lonlat(projection, width-1, height-1, width, height, largestDim, zoomFactor);
-		let lonlat3 = viewxy2lonlat(projection, 0, height-1, width, height, largestDim, zoomFactor);
-		let lonlat4 = viewxy2lonlat(projection, width-1, 0, width, height, largestDim, zoomFactor);
-		let lonMin = Math.min(lonlat1.lon, lonlat2.lon, lonlat3.lon, lonlat4.lon) // ∈ [0,360]
-		let lonMax = Math.max(lonlat1.lon, lonlat2.lon, lonlat3.lon, lonlat4.lon) // ∈ [0,360]
-		let latMin = Math.min(lonlat1.lat, lonlat2.lat, lonlat3.lat, lonlat4.lat) // ∈ [-90,90]
-		let latMax = Math.max(lonlat1.lat, lonlat2.lat, lonlat3.lat, lonlat4.lat) // ∈ [-90,90]
+		let lonMax = 0, lonMin = 359.9999, latMax = -90, latMin = 90
+		let lonlat1 = viewxy2lonlat(projection, 0      , 0       , width, height, largestDim, zoomFactor) as LonLat // TODO : this could be null
+		let lonlat2 = viewxy2lonlat(projection, width-1, height-1, width, height, largestDim, zoomFactor) as LonLat // TODO : this could be null
+		let lonlat3 = viewxy2lonlat(projection, 0      , height-1, width, height, largestDim, zoomFactor) as LonLat // TODO : this could be null
+		let lonlat4 = viewxy2lonlat(projection, width-1, 0       , width, height, largestDim, zoomFactor) as LonLat // TODO : this could be null
+		lonMin = Math.min(lonlat1.lon, lonlat2.lon, lonlat3.lon, lonlat4.lon) // ∈ [0,360]
+		lonMax = Math.max(lonlat1.lon, lonlat2.lon, lonlat3.lon, lonlat4.lon) // ∈ [0,360]
+		latMin = Math.min(lonlat1.lat, lonlat2.lat, lonlat3.lat, lonlat4.lat) // ∈ [-90,90]
+		latMax = Math.max(lonlat1.lat, lonlat2.lat, lonlat3.lat, lonlat4.lat) // ∈ [-90,90]
 
 		let lonDiff = lonMax - lonMin
 		let latDiff = latMax - latMin
@@ -86,7 +98,7 @@ class CooGrid {
 			let k = 0
 			for (let lon=lonMin; lon<lonMax+LON_STEP; lon+=lonDiff/10) {
 				k++
-				vxy = AladinUtils.radecToViewXy(lon, lat, projection, CooFrameEnum.J2000, width, height, largestDim, zoomFactor)
+				vxy = AladinUtils.radecToViewXy(lon, lat, projection, CooFrameEnum.J2000, width, height, largestDim, zoomFactor) as Vxy // TODO this could be null
 				ctx.lineTo(vxy.vx, vxy.vy)
 				if (k==3) ctx.strokeText(lat.toFixed(2), vxy.vx, vxy.vy-2)
 			}
@@ -94,7 +106,7 @@ class CooGrid {
 		}
 
 		for (let lon=lonStart; lon<lonMax+LON_STEP; lon+=LON_STEP) {
-			ctx.beginPath();
+			ctx.beginPath()
 
 			let vxy = AladinUtils.radecToViewXy(lon, latMin, projection, CooFrameEnum.J2000, width, height, largestDim, zoomFactor)
 			if (!vxy) continue
@@ -102,7 +114,7 @@ class CooGrid {
 			let k = 0
 			for (let lat=latMin; lat<latMax+LAT_STEP; lat+=latDiff/10) {
 				k++
-				vxy = AladinUtils.radecToViewXy(lon, lat, projection, CooFrameEnum.J2000, width, height, largestDim, zoomFactor)
+				vxy = AladinUtils.radecToViewXy(lon, lat, projection, CooFrameEnum.J2000, width, height, largestDim, zoomFactor) as Vxy // TODO this could be null
 				ctx.lineTo(vxy.vx, vxy.vy)
 				if (k==3) ctx.strokeText(lon.toFixed(2), vxy.vx, vxy.vy-2)
 			}
