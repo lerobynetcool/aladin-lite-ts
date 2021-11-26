@@ -28,35 +28,42 @@
  *****************************************************************************/
 
 
+
+
+
+
+
+
+
 /** Returns the squared distance for points in array c at indexes g and d */
 function dist(c, g, d) {
-	var dx=c[g].vx-c[d].vx;
-	var dy=c[g].vy-c[d].vy;
-	return  dx*dx + dy*dy;
+	let dx=c[g].vx-c[d].vx
+	let dy=c[g].vy-c[d].vy
+	return  dx*dx + dy*dy
 }
 
-var M = 280*280
-var N = 150*150
-var RAP=0.7
+let M = 280*280
+let N = 150*150
+let RAP=0.7
 
 /** Returns true if the HEALPix rhomb described by its 4 corners (array c)
  * is too large to be drawn in one pass ==> need to be subdivided */
 function isTooLarge(c) {
-	var d1,d2;
+	let d1,d2
 	if ( (d1=dist(c,0,2))>M || (d2=dist(c,2,1))>M ) {
-		return true;
+		return true
 	}
 	if ( d1==0 || d2==0 ) {
-		throw "Rhomb error";
+		throw "Rhomb error"
 	}
-	var diag1 = dist(c,0,3);
-	var diag2 = dist(c,1,2);
+	let diag1 = dist(c,0,3)
+	let diag2 = dist(c,1,2)
 	if ( diag2==0 || diag2==0 ) {
-		throw "Rhomb error";
+		throw "Rhomb error"
 	}
-	var rap = diag2>diag1 ? diag1/diag2 : diag2/diag1;
+	let rap = diag2>diag1 ? diag1/diag2 : diag2/diag1
 
-	return rap<RAP && (diag1>N || diag2>N);
+	return rap<RAP && (diag1>N || diag2>N)
 }
 
 let MAX_PARENTE = 4
@@ -64,10 +71,10 @@ let MAX_PARENTE = 4
 class HpxKey {
 
 	constructor(norder, npix, hips, width, height, dx, dy, allskyTexture, allskyTextureSize) {
-		this.norder = norder;
-		this.npix = npix;
+		this.norder = norder
+		this.npix = npix
 
-		this.nside = Math.pow(2, norder);
+		this.nside = Math.pow(2, norder)
 
 		this.hips = hips; // survey to which this HpxKey is attached
 		this.frame = hips.cooFrame; // coordinate frame of the survey to which this HpxKey is attached
