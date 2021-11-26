@@ -85,7 +85,7 @@ class HpxKey {
 		this.dx = dx || 0; // shift in x (for all-sky tiles)
 		this.dy = dy || 0; // shift in y (for all-sky tiles)
 
-		this.allskyTexture = allskyTexture || undefined;
+		this.allskyTexture = allskyTexture
 		this.allskyTextureSize = allskyTextureSize;
 
 		this.parente = 0; // if this key comes from an ancestor, length of the filiation
