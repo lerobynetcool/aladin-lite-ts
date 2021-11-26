@@ -41,15 +41,12 @@ class MeasurementTable {
 	// show measurement associated with a given source
 	showMeasurement(source) {
 		this.divEl.empty()
-		var header = '<thead><tr>'
-		var content = '<tr>'
-		for (key in source.data) {
-			header += '<th>' + key + '</th>'
-			content += '<td>' + source.data[key] + '</td>'
-		}
-		header += '</tr></thead>'
-		content += '</tr>'
-		this.divEl.append('<table>' + header + content + '</table>')
+
+		let keys = Object.keys(source.data)
+		let header  = keys.map(k=>`<th>${k             }</th>`).reduce((a,b)=>a+b)
+		let content = keys.map(k=>`<td>${source.data[k]}</td>`).reduce((a,b)=>a+b)
+
+		this.divEl.append(`<table><thead><tr>${header}</tr></thead><tr>${content}</tr></table>`)
 		this.show()
 	}
 
