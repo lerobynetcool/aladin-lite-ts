@@ -50,9 +50,7 @@ function isTooLarge(c) {
 	}
 	let diag1 = dist(c,0,3)
 	let diag2 = dist(c,1,2)
-	if ( diag2==0 || diag2==0 ) {
-		throw "Rhomb error"
-	}
+	if ( diag2==0 || diag2==0 ) throw "Rhomb error" // TODO : potential bug, this is testing twice for the same thing.
 	let rap = diag2>diag1 ? diag1/diag2 : diag2/diag1
 
 	return rap<RAP && (diag1>N || diag2>N)
