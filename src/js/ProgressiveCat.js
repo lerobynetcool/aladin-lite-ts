@@ -17,8 +17,6 @@
 //    along with Aladin Lite.
 //
 
-
-
 /******************************************************************************
  * Aladin Lite project
  *
@@ -165,9 +163,7 @@ class ProgressiveCat {
 				successCallback(props)
 
 			},
-			error: function(err) { // TODO : which parameters should we put in the error callback
-				errorCallback && errorCallback(err)
-			}
+			error: (err) => errorCallback && errorCallback(err) // TODO : which parameters should we put in the error callback
 		})
 	}
 
@@ -181,13 +177,13 @@ class ProgressiveCat {
 
 		else {
 			ProgressiveCat.readProperties(self.rootUrl,
-				function (properties) {
+				(properties) => {
 					self.properties = properties
 					self.maxOrder = self.properties['hips_order']
 					self.frame = CooFrameEnum.fromString(self.properties['hips_frame'])
 
 					self._loadMetadata()
-				}, function(err) {
+				}, (err) => {
 					console.log('Could not find properties for HiPS ' + self.rootUrl)
 				}
 			)
@@ -201,11 +197,11 @@ class ProgressiveCat {
 		$.ajax({
 			url: self.rootUrl + '/' + 'Metadata.xml',
 			method: 'GET',
-			success: function(xml) {
+			success: (xml) => {
 				self.fields = getFields(self, xml)
 				self._loadAllskyNewMethod()
 			},
-			error: function(err) {
+			error: (err) => {
 				self._loadAllskyOldMethod()
 			}
 		})
@@ -224,11 +220,8 @@ class ProgressiveCat {
 					self._finishInitWhenReady()
 				}
 			},
-			error: function(err) {
-				console.log('Something went wrong: ' + err)
-			}
+			error: (err) => console.log('Something went wrong: ' + err)
 		})
-
 		$.ajax({
 			url: self.rootUrl + '/' + 'Norder2/Allsky.tsv',
 			method: 'GET',
@@ -240,9 +233,7 @@ class ProgressiveCat {
 					self._finishInitWhenReady()
 				}
 			},
-			error: function(err) {
-				console.log('Something went wrong: ' + err)
-			}
+			error: (err) => console.log('Something went wrong: ' + err)
 		})
 	}
 
@@ -257,7 +248,7 @@ class ProgressiveCat {
 		$.ajax({
 			url: self.rootUrl + '/' + 'Norder2/Allsky.xml',
 			method: 'GET',
-			success: function(xml) {
+			success: (xml) => {
 				self.fields = getFields(self, xml)
 				self.order2Sources = getSources(self, $(xml).find('CSV').text(), self.fields)
 				if (self.order3Sources) {
@@ -265,9 +256,7 @@ class ProgressiveCat {
 					self._finishInitWhenReady()
 				}
 			},
-			error: function(err) {
-				console.log('Something went wrong: ' + err)
-			}
+			error: (err) => console.log('Something went wrong: ' + err)
 		})
 	}
 
@@ -276,16 +265,14 @@ class ProgressiveCat {
 		$.ajax({
 			url: self.rootUrl + '/' + 'Norder3/Allsky.xml',
 			method: 'GET',
-			success: function(xml) {
+			success: (xml) => {
 				self.order3Sources = getSources(self, $(xml).find('CSV').text(), self.fields)
 				if (self.order2Sources) {
 					self.isReady = true
 					self._finishInitWhenReady()
 				}
 			},
-			error: function(err) {
-				console.log('Something went wrong: ' + err)
-			}
+			error: (err) => console.log('Something went wrong: ' + err)
 		})
 	}
 
@@ -344,9 +331,7 @@ class ProgressiveCat {
 				t = this.tilesInView[k]
 				key = t[0] + '-' + t[1]
 				sources = this.sourcesCache.get(key)
-				if (sources) {
-					ret = ret.concat(sources)
-				}
+				if (sources) ret = ret.concat(sources)
 			}
 		}
 
@@ -373,9 +358,7 @@ class ProgressiveCat {
 		}
 		let keys = this.sourcesCache.keys()
 		for (key in keys) {
-			if ( ! this.sourcesCache[key]) {
-				continue
-			}
+			if (!this.sourcesCache[key]) continue
 			let sources = this.sourcesCache[key]
 			for (let k=0; k<sources.length; k++) {
 				sources[k].deselect()
@@ -396,13 +379,11 @@ class ProgressiveCat {
 		this.reportChange()
 	}
 
-	reportChange() {
-		this.view.requestRedraw()
-	}
+	reportChange() { this.view.requestRedraw() }
 
 	getTileURL(norder, npix) {
 		let dirIdx = Math.floor(npix/10000)*10000
-		return this.rootUrl + "/" + "Norder" + norder + "/Dir" + dirIdx + "/Npix" + npix + ".tsv"
+		return `${this.rootUrl}/Norder${norder}/Dir${dirIdx}/Npix${npix}.tsv`
 	}
 
 	loadNeededTiles() {
@@ -419,9 +400,7 @@ class ProgressiveCat {
 			ipixList = []
 			for (let k=0; k<cells.length; k++) {
 				ipix = Math.floor(cells[k].ipix / Math.pow(4, norder - curOrder))
-				if (ipixList.indexOf(ipix)<0) {
-					ipixList.push(ipix)
-				}
+				if (ipixList.indexOf(ipix)<0) ipixList.push(ipix)
 			}
 
 			// load needed tiles
@@ -434,7 +413,7 @@ class ProgressiveCat {
 		let self = this
 		for (let k=0; k<this.tilesInView.length; k++) {
 			t = this.tilesInView[k]
-			key = t[0] + '-' + t[1]; // t[0] is norder, t[1] is ipix
+			key = t[0] + '-' + t[1] // t[0] is norder, t[1] is ipix
 			if (!this.sourcesCache.get(key)) {
 				(function(self, norder, ipix) { // wrapping function is needed to be able to retrieve norder and ipix in ajax success function
 					let key = norder + '-' + ipix
@@ -447,14 +426,11 @@ class ProgressiveCat {
 						url: self.getTileURL(norder, ipix),
 						method: 'GET',
 						//dataType: 'jsonp',
-						success: function(tsv) {
+						success: (tsv) => {
 							self.sourcesCache.set(key, getSources(self, tsv, self.fields))
 							self.view.requestRedraw()
 						},
-						error: function() {
-							// on suppose qu'il s'agit d'une erreur 404
-							self.sourcesCache.set(key, [])
-						}
+						error: () => self.sourcesCache.set(key, []) // on suppose qu'il s'agit d'une erreur 404
 					})
 				})(this, t[0], t[1])
 			}
