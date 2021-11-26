@@ -28,40 +28,31 @@
  *
  *****************************************************************************/
 
-MeasurementTable = (function() {
+class MeasurementTable {
 
-	// constructor
-	MeasurementTable = function(aladinLiteDiv) {
-		this.isShowing = false;
+	constructor(aladinLiteDiv) {
+		this.isShowing = false
 
-		this.divEl = $('<div class="aladin-measurement-div"></div>');
+		this.divEl = $('<div class="aladin-measurement-div"></div>')
 
-		$(aladinLiteDiv).append(this.divEl);
+		$(aladinLiteDiv).append(this.divEl)
 	}
 
 	// show measurement associated with a given source
-	MeasurementTable.prototype.showMeasurement = function(source) {
-		this.divEl.empty();
-		var header = '<thead><tr>';
-		var content = '<tr>';
+	showMeasurement(source) {
+		this.divEl.empty()
+		var header = '<thead><tr>'
+		var content = '<tr>'
 		for (key in source.data) {
-			header += '<th>' + key + '</th>';
-			content += '<td>' + source.data[key] + '</td>';
+			header += '<th>' + key + '</th>'
+			content += '<td>' + source.data[key] + '</td>'
 		}
-		header += '</tr></thead>';
-		content += '</tr>';
-		this.divEl.append('<table>' + header + content + '</table>');
-		this.show();
-	};
+		header += '</tr></thead>'
+		content += '</tr>'
+		this.divEl.append('<table>' + header + content + '</table>')
+		this.show()
+	}
 
-	MeasurementTable.prototype.show = function() {
-		this.divEl.show();
-	};
-
-	MeasurementTable.prototype.hide = function() {
-		this.divEl.hide();
-	};
-
-	return MeasurementTable;
-})();
-
+	show() { this.divEl.show() }
+	hide() { this.divEl.hide() }
+}
