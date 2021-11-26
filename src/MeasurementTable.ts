@@ -28,18 +28,20 @@
  *
  *****************************************************************************/
 
-class MeasurementTable {
+import { Source } from './Source'
 
-	constructor(aladinLiteDiv) {
-		this.isShowing = false
+export class MeasurementTable {
 
+	isShowing = false
+	divEl
+
+	constructor(aladinLiteDiv: any) {
 		this.divEl = $('<div class="aladin-measurement-div"></div>')
-
 		$(aladinLiteDiv).append(this.divEl)
 	}
 
 	// show measurement associated with a given source
-	showMeasurement(source) {
+	showMeasurement(source: Source) {
 		this.divEl.empty()
 
 		let keys = Object.keys(source.data)
