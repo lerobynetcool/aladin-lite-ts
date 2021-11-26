@@ -42,24 +42,18 @@ let RAP=0.7
  * is too large to be drawn in one pass ==> need to be subdivided */
 function isTooLarge(c) {
 	let d1,d2
-	if ( (d1=dist(c,0,2))>M || (d2=dist(c,2,1))>M ) {
-		return true
-	}
-	if ( d1==0 || d2==0 ) {
-		throw "Rhomb error"
-	}
+	if ( (d1=dist(c,0,2))>M || (d2=dist(c,2,1))>M ) return true
+	if ( d1==0 || d2==0 ) throw "Rhomb error"
 	let diag1 = dist(c,0,3)
 	let diag2 = dist(c,1,2)
 	if ( diag2==0 || diag2==0 ) throw "Rhomb error" // TODO : potential bug, this is testing twice for the same thing.
 	let rap = diag2>diag1 ? diag1/diag2 : diag2/diag1
-
 	return rap<RAP && (diag1>N || diag2>N)
 }
 
 let MAX_PARENTE = 4
 
 class HpxKey {
-
 	constructor(norder, npix, hips, width, height, dx, dy, allskyTexture, allskyTextureSize) {
 		this.norder = norder
 		this.npix = npix
@@ -86,7 +80,7 @@ class HpxKey {
 
 	// "static" methods
 	static createHpxKeyfromAncestor(father, childNb) {
-		var hpxKey = new HpxKey(
+		let hpxKey = new HpxKey(
 			father.norder+1,
 			father.npix*4 + childNb,
 			father.hips,
@@ -102,18 +96,18 @@ class HpxKey {
 
 	draw(ctx, view) {
 		//console.log('Drawing ', this.norder, this.npix)
-		var n = 0 // number of traced triangles
-		var corners = this.getProjViewCorners(view)
+		let n = 0 // number of traced triangles
+		let corners = this.getProjViewCorners(view)
 
 		if (corners==null) return 0
 
-		var now = new Date().getTime()
-		var updateNeededTiles = this.ancestor==null && this.norder>=3 && (now-this.hips.lastUpdateDateNeededTiles) > 0.1
+		let now = new Date().getTime()
+		let updateNeededTiles = this.ancestor==null && this.norder>=3 && (now-this.hips.lastUpdateDateNeededTiles) > 0.1
 
 		try {
 			if (isTooLarge(corners)) {
 				//console.log('too large')
-				var m = this.drawChildren(ctx, view, MAX_PARENTE)
+				let m = this.drawChildren(ctx, view, MAX_PARENTE)
 
 				// Si aucun sous-losange n'a pu être dessiné, je trace tout de même le père
 				if( m>0 ) {
@@ -126,20 +120,20 @@ class HpxKey {
 		}
 
 		// actual drawing
-		var norder = this.ancestor==null ? this.norder : this.ancestor.norder
-		var npix = this.ancestor==null ? this.npix : this.ancestor.npix
+		let norder = this.ancestor==null ? this.norder : this.ancestor.norder
+		let npix = this.ancestor==null ? this.npix : this.ancestor.npix
 
 		//console.log(corners)
 		//corners = AladinUtils.grow2(corners, 1) // grow by 1 pixel in each direction
 		//console.log(corners)
-		var url = this.hips.getTileURL(norder, npix)
-		var tile = this.hips.tileBuffer.getTile(url)
+		let url = this.hips.getTileURL(norder, npix)
+		let tile = this.hips.tileBuffer.getTile(url)
 		if (tile && Tile.isImageOk(tile.img) || this.allskyTexture) {
 			if (!this.allskyTexture && !this.hips.tileSize) {
 				this.hips.tileSize = tile.img.width
 			}
-			var img = this.allskyTexture || tile.img
-			var w = this.allskyTextureSize || img.width
+			let img = this.allskyTexture || tile.img
+			let w = this.allskyTextureSize || img.width
 			if (this.parente) {
 				w = w / Math.pow(2, this.parente)
 			}
@@ -158,12 +152,12 @@ class HpxKey {
 	}
 
 	drawChildren(ctx, view, maxParente) {
-		var n=0
-		var limitOrder = 13 // corresponds to NSIDE=8192, current HealpixJS limit
+		let n=0
+		let limitOrder = 13 // corresponds to NSIDE=8192, current HealpixJS limit
 		if ( this.width>1 && this.norder<limitOrder && this.parente<maxParente ) {
-			var children = this.getChildren()
+			let children = this.getChildren()
 			if ( children!=null ) {
-				for ( var i=0; i<4; i++ ) {
+				for (let i=0; i<4; i++) {
 					//console.log(i)
 					if ( children[i]!=null ) {
 						n += children[i].draw(ctx , view, maxParente)
@@ -177,13 +171,11 @@ class HpxKey {
 
 	// returns the 4 HpxKey children
 	getChildren() {
-		if (this.children!=null) {
-			return this.children
-		}
+		if (this.children!=null) return this.children
 
-		var children = []
-		for ( var childNb=0; childNb<4; childNb++ ) {
-			var child = HpxKey.createHpxKeyfromAncestor(this, childNb)
+		let children = []
+		for (let childNb=0; childNb<4; childNb++) {
+			let child = HpxKey.createHpxKeyfromAncestor(this, childNb)
 			children[childNb] = child
 		}
 		this.children = children
@@ -192,25 +184,25 @@ class HpxKey {
 	}
 
 	getProjViewCorners(view) {
-		var cornersXY = []
-		var cornersXYView = []
-		var spVec = new SpatialVector()
+		let cornersXY = []
+		let cornersXYView = []
+		let spVec = new SpatialVector()
 
 		corners = HealpixCache.corners_nest(this.npix, this.nside)
 
-		var lon, lat
-		for (var k=0; k<4; k++) {
+		let lon, lat
+		for (let k=0; k<4; k++) {
 			spVec.setXYZ(corners[k].x, corners[k].y, corners[k].z)
 
 			// need for frame transformation ?
 			if (this.frame.system != view.cooFrame.system) {
 				if (this.frame.system == CooFrameEnum.SYSTEMS.J2000) {
-					var radec = CooConversion.J2000ToGalactic([spVec.ra(), spVec.dec()])
+					let radec = CooConversion.J2000ToGalactic([spVec.ra(), spVec.dec()])
 					lon = radec[0]
 					lat = radec[1]
 				}
 				else if (this.frame.system == CooFrameEnum.SYSTEMS.GAL) {
-					var radec = CooConversion.GalacticToJ2000([spVec.ra(), spVec.dec()])
+					let radec = CooConversion.GalacticToJ2000([spVec.ra(), spVec.dec()])
 					lon = radec[0]
 					lat = radec[1]
 				}
@@ -224,7 +216,7 @@ class HpxKey {
 
 		if (cornersXY[0] == null ||  cornersXY[1] == null  ||  cornersXY[2] == null ||  cornersXY[3] == null ) return null
 
-		for (var k=0; k<4; k++) {
+		for (let k=0; k<4; k++) {
 			cornersXYView[k] = AladinUtils.xyToView(cornersXY[k].X, cornersXY[k].Y, view.width, view.height, view.largestDim, view.zoomFactor)
 		}
 
