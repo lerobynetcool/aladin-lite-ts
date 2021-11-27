@@ -267,15 +267,10 @@ let MOCSERVER_MIRRORS_HTTPS = ['https://alasky.u-strasbg.fr/MocServer/query', 'h
 
 // complement the baseList with the items in newList
 function merge(baseList, newList) {
-	let updatedList = []
 	let newListById = {}
-	for (let k=0; k<newList.length; k++) {
-		let item = newList[k]
-		newListById[item.ID] = item
-	}
+	newList.forEach( item => newListById[item.ID] = item )
 
-	for (let k=0; k<baseList.length; k++) {
-		let item = baseList[k]
+	let updatedList = baseList.map( item => {
 		let id = item.ID
 		if (newListById.hasOwnProperty(id)) {
 			let itemToAdd = newListById[id]
@@ -283,12 +278,12 @@ function merge(baseList, newList) {
 			if (item.hasOwnProperty(LAST_URL_KEY) && ! itemToAdd.hasOwnProperty(LAST_URL_KEY)) {
 				itemToAdd[LAST_URL_KEY] = item[LAST_URL_KEY]
 			}
-			updatedList.push(itemToAdd)
+			return itemToAdd
 		}
 		else {
-			updatedList.push(item)
+			return item
 		}
-	}
+	})
 	return updatedList
 }
 
