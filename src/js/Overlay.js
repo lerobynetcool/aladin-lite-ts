@@ -29,8 +29,9 @@
  *****************************************************************************/
 
 class Overlay {
+	type = 'overlay'
+
 	constructor(options = {}) {
-		this.type = 'overlay'
 
 		this.name = options.name || "overlay"
 		this.color = options.color || Color.getNextColor()
@@ -61,22 +62,22 @@ class Overlay {
 
 	// return an array of Footprint from a STC-S string
 	static parseSTCS(stcs) {
-		var footprints = []
-		var parts = stcs.match(/\S+/g)
-		var k = 0, len = parts.length
+		let footprints = []
+		let parts = stcs.match(/\S+/g)
+		let k = 0, len = parts.length
 		while(k<len) {
-			var s = parts[k].toLowerCase()
+			let s = parts[k].toLowerCase()
 			if(s=='polygon') {
-				var curPolygon = []
+				let curPolygon = []
 				k++
 				frame = parts[k].toLowerCase()
 				if (frame=='icrs' || frame=='j2000' || frame=='fk5') {
 					while(k+2<len) {
-						var ra = parseFloat(parts[k+1])
+						let ra = parseFloat(parts[k+1])
 						if (isNaN(ra)) {
 							break
 						}
-						var dec = parseFloat(parts[k+2])
+						let dec = parseFloat(parts[k+2])
 						curPolygon.push([ra, dec])
 						k += 2
 					}
@@ -85,12 +86,12 @@ class Overlay {
 				}
 			}
 			else if (s=='circle') {
-				var frame
+				let frame
 				k++
 				frame = parts[k].toLowerCase()
 
 				if (frame=='icrs' || frame=='j2000' || frame=='fk5') {
-					var ra, dec, radiusDegrees
+					let ra, dec, radiusDegrees
 
 					ra = parseFloat(parts[k+1])
 					dec = parseFloat(parts[k+2])
@@ -156,13 +157,13 @@ class Overlay {
 		// selection drawing
 		ctx.strokeStyle= Overlay.increaseBrightness(this.color, 50)
 		ctx.beginPath()
-		for (var k=0, len = this.overlays.length; k<len; k++) {
+		for (let k=0, len = this.overlays.length; k<len; k++) {
 			if (this.overlays[k].isSelected) this.drawFootprintSelected(ctx, xyviews[k])
 		}
 		ctx.stroke()
 
 		// 2. Circle and polylines drawing
-		for (var k=0; k<this.overlay_items.length; k++) {
+		for (let k=0; k<this.overlay_items.length; k++) {
 			this.overlay_items[k].draw(ctx, projection, frame, width, height, largestDim, zoomFactor)
 		}
 	}
@@ -174,7 +175,7 @@ class Overlay {
 		// convert 3 char codes --> 6, e.g. `E0F` --> `EE00FF`
 		if(hex.length == 3) hex = hex.replace(/(.)/g, '$1$1')
 
-		var r = parseInt(hex.substr(0, 2), 16),
+		let r = parseInt(hex.substr(0, 2), 16),
 			g = parseInt(hex.substr(2, 2), 16),
 			b = parseInt(hex.substr(4, 2), 16)
 
@@ -186,14 +187,14 @@ class Overlay {
 
 	drawFootprint(f, ctx, projection, frame, width, height, largestDim, zoomFactor) {
 		if (! f.isShowing) return null
-		var xyviewArray = []
-		var show = false
-		var radecArray = f.polygons
+		let xyviewArray = []
+		let show = false
+		let radecArray = f.polygons
 
-		for (var k=0, len=radecArray.length; k<len; k++) {
-			var xy
+		for (let k=0, len=radecArray.length; k<len; k++) {
+			let xy
 			if (frame.system != CooFrameEnum.SYSTEMS.J2000) {
-				var lonlat = CooConversion.J2000ToGalactic([radecArray[k][0], radecArray[k][1]])
+				let lonlat = CooConversion.J2000ToGalactic([radecArray[k][0], radecArray[k][1]])
 				xy = projection.project(lonlat[0], lonlat[1])
 			}
 			else {
@@ -202,7 +203,7 @@ class Overlay {
 			if (!xy) {
 				return null
 			}
-			var xyview = AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor)
+			let xyview = AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor)
 			xyviewArray.push(xyview)
 			if (!show && xyview.vx<width && xyview.vx>=0 && xyview.vy<=height && xyview.vy>=0) {
 				show = true
