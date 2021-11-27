@@ -110,9 +110,7 @@ class Overlay {
 
 	// ajout d'un tableau d'overlays (= objets Footprint, Circle ou Polyline)
 	addFootprints(overlaysToAdd) {
-		for (var k=0, len=overlaysToAdd.length; k<len; k++) {
-			this.add(overlaysToAdd[k], false)
-		}
+		overlaysToAdd.forEach( o => this.add(o, false) )
 		this.view.requestRedraw()
 	}
 
