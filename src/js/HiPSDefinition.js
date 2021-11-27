@@ -355,7 +355,7 @@ class HiPSDefinition {
 
 	// get HiPS definitions, by querying the MocServer
 	// return data as dict-like objects
-	static getRemoteDefinitions(params, successCallbackFn, failureCallbackFn) {
+	static getRemoteDefinitions(params, successCallbackFn = ()=>{}, failureCallbackFn = ()=>{}) {
 		params = params || {client_application: 'AladinLite'} // by default, retrieve only HiPS tagged "Aladin Lite"
 
 		params['fmt'] = 'json'
@@ -363,15 +363,12 @@ class HiPSDefinition {
 
 		let urls = Utils.isHttpsContext() ? MOCSERVER_MIRRORS_HTTPS : MOCSERVER_MIRRORS_HTTP
 
-		let successCallback = function(data) {
-			(typeof successCallbackFn === 'function') && successCallbackFn(data)
-		}
-		let failureCallback = function() {
-			console.error('Could not load HiPS definitions from urls ' + urls)
-			(typeof failureCallbackFn === 'function') && failureCallbackFn()
+		let failureCallback = () => {
+			console.error(`Could not load HiPS definitions from urls ${urls}`)
+			failureCallbackFn()
 		}
 
-		Utils.loadFromMirrors(urls, {data: params, onSuccess: successCallback, onFailure: failureCallback, timeout: 5})
+		Utils.loadFromMirrors(urls, {data: params, onSuccess: successCallbackFn, onFailure: failureCallback, timeout: 5})
 	}
 
 	static CACHE_RETENTION_TIME_SECONDS = 7 * 86400 // definitions can be kept 7 days
