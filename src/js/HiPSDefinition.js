@@ -280,9 +280,7 @@ function merge(baseList, newList) {
 			}
 			return itemToAdd
 		}
-		else {
-			return item
-		}
+		else return item
 	})
 	return updatedList
 }
@@ -417,10 +415,9 @@ class HiPSDefinition {
 		let ret = []
 		for (let k=0; k<listHipsProperties.length; k++) {
 			let properties = listHipsProperties[k]
-			if ( ! properties.hasOwnProperty('client_application') || properties['client_application'].indexOf('AladinLite')<0) {
+			if (!properties.hasOwnProperty('client_application') || properties['client_application'].indexOf('AladinLite')<0) {
 				continue
 			}
-
 			ret.push(new HiPSDefinition(properties))
 		}
 		return ret
@@ -439,9 +436,7 @@ class HiPSDefinition {
 	// parse a HiPS properties and return a dict-like object with corresponding key-values
 	// return null if parsing failed
 	static parseHiPSProperties(propertiesStr) {
-		if (propertiesStr==null) {
-			return null
-		}
+		if (propertiesStr==null) return null
 
 		let propertiesDict = {}
 		// remove CR characters
