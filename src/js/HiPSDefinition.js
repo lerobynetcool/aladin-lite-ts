@@ -328,7 +328,6 @@ class HiPSDefinition {
 			// '?' are replaced by '/'
 			id = id.replace(/\?/g, '/')
 		}
-
 		return id
 	}
 
@@ -341,10 +340,7 @@ class HiPSDefinition {
 			let defs = window.localStorage.getItem(HiPSDefinition.LOCAL_STORAGE_KEY)
 			return defs === null ? [] : window.JSON.parse(defs)
 		}
-		catch(e) {
-			// silently fail and return empty array
-			return []
-		}
+		catch(e) { return [] } // silently fail and return empty array
 	}
 
 	// store in local storage a list of HiPSDefinition objects
@@ -353,17 +349,14 @@ class HiPSDefinition {
 		try {
 			window.localStorage.setItem(HiPSDefinition.LOCAL_STORAGE_KEY, window.JSON.stringify(properties))
 		}
-		catch(e) {
-			// silently fail and return false
-			return false
-		}
+		catch(e) { return false } // silently fail and return false
 		return true
 	}
 
 	// get HiPS definitions, by querying the MocServer
 	// return data as dict-like objects
 	static getRemoteDefinitions(params, successCallbackFn, failureCallbackFn) {
-		let params = params || {client_application: 'AladinLite'} // by default, retrieve only HiPS tagged "Aladin Lite"
+		params = params || {client_application: 'AladinLite'} // by default, retrieve only HiPS tagged "Aladin Lite"
 
 		params['fmt'] = 'json'
 		params['fields'] = 'ID,obs_title,client_sort_key,client_application,hips_service_url*,hips_order,hips_tile_format,hips_frame'
