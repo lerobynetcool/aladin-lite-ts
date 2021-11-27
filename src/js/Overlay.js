@@ -39,7 +39,7 @@ class Overlay {
 
 		//this.indexationNorder = 5; // at which level should we index overlays?
 		this.overlays = []
-		this.overlay_items = []; // currently Circle or Polyline
+		this.overlay_items = [] // currently Circle or Polyline
 		//this.hpxIdx = new HealpixIndex(this.indexationNorder)
 		//this.hpxIdx.init()
 
@@ -150,10 +150,7 @@ class Overlay {
 		// TODO: les overlay polygons devrait se tracer lui meme (methode draw)
 		ctx.lineWidth = this.lineWidth
 		ctx.beginPath()
-		xyviews = []
-		for (var k=0, len = this.overlays.length; k<len; k++) {
-			xyviews.push(this.drawFootprint(this.overlays[k], ctx, projection, frame, width, height, largestDim, zoomFactor))
-		}
+		let xyviews = this.overlays.map( o => this.drawFootprint(o, ctx, projection, frame, width, height, largestDim, zoomFactor))
 		ctx.stroke()
 
 		// selection drawing
