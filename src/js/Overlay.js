@@ -186,33 +186,28 @@ class Overlay {
 	}
 
 	drawFootprint(f, ctx, projection, frame, width, height, largestDim, zoomFactor) {
-		if (! f.isShowing) return null
-		let xyviewArray = []
+		if (!f.isShowing) return null
 		let show = false
-		let radecArray = f.polygons
-
-		for (let k=0, len=radecArray.length; k<len; k++) {
+		let xyviews = f.polygons.map( radec => {
 			let xy
 			if (frame.system != CooFrameEnum.SYSTEMS.J2000) {
-				let lonlat = CooConversion.J2000ToGalactic([radecArray[k][0], radecArray[k][1]])
+				let lonlat = CooConversion.J2000ToGalactic([radec[0], radec[1]])
 				xy = projection.project(lonlat[0], lonlat[1])
 			}
 			else {
-				xy = projection.project(radecArray[k][0], radecArray[k][1])
+				xy = projection.project(radec[0], radec[1])
 			}
-			if (!xy) {
-				return null
-			}
+			if (!xy) return null
 			let xyview = AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor)
-			xyviewArray.push(xyview)
 			if (!show && xyview.vx<width && xyview.vx>=0 && xyview.vy<=height && xyview.vy>=0) {
 				show = true
 			}
-		}
+			return xyview
+		})
 
-		if (show) this.drawFootprintSelected(ctx,xyviewArray)
+		if (show) this.drawFootprintSelected(ctx,xyviews)
 
-		return xyviewArray
+		return xyviews
 	}
 
 	drawFootprintSelected(ctx, xyviews) {
