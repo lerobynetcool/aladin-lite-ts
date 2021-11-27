@@ -394,17 +394,8 @@ class HiPSDefinition {
 		let localDefs = HiPSDefinition.getLocalStorageDefinitions()
 		// 2.1 remove old defs
 		let now = new Date().getTime()
-		let indicesToRemove = []
-		for (let k=0; k<localDefs.length; k++) {
-			let def = localDefs[k]
-			if (def.hasOwnProperty(RETRIEVAL_TIMESTAMP_KEY) && (now - def[RETRIEVAL_TIMESTAMP_KEY]) > 1000 * HiPSDefinition.CACHE_RETENTION_TIME_SECONDS) {
-				indicesToRemove.push(k)
-			}
-		}
-		// we have to browse the array in reverse order in order not to mess up indices
-		for (let k = indicesToRemove.length - 1; k >= 0; k--) {
-			localDefs.splice(indicesToRemove[k],1)
-		}
+		localDefs = localDefs.filter( def => !(def.hasOwnProperty(RETRIEVAL_TIMESTAMP_KEY) && (now - def[RETRIEVAL_TIMESTAMP_KEY]) > 1000 * HiPSDefinition.CACHE_RETENTION_TIME_SECONDS))
+
 		// 2.2 merge
 		listHipsProperties = merge(listHipsProperties, localDefs)
 
