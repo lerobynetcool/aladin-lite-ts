@@ -30,212 +30,212 @@
 
 class Overlay {
 	constructor(options = {}) {
-		this.type = 'overlay';
+		this.type = 'overlay'
 
-		this.name = options.name || "overlay";
-		this.color = options.color || Color.getNextColor();
+		this.name = options.name || "overlay"
+		this.color = options.color || Color.getNextColor()
 
-		this.lineWidth = options["lineWidth"] || 2;
+		this.lineWidth = options["lineWidth"] || 2
 
 		//this.indexationNorder = 5; // at which level should we index overlays?
-		this.overlays = [];
+		this.overlays = []
 		this.overlay_items = []; // currently Circle or Polyline
-		//this.hpxIdx = new HealpixIndex(this.indexationNorder);
-		//this.hpxIdx.init();
+		//this.hpxIdx = new HealpixIndex(this.indexationNorder)
+		//this.hpxIdx.init()
 
-		this.isShowing = true;
+		this.isShowing = true
 	}
 
 	// TODO : show/hide methods should be integrated in a parent class
 	show() {
-		if (this.isShowing) return;
-		this.isShowing = true;
-		this.reportChange();
+		if (this.isShowing) return
+		this.isShowing = true
+		this.reportChange()
 	}
 
 	hide() {
-		if (! this.isShowing) return;
-		this.isShowing = false;
-		this.reportChange();
+		if (! this.isShowing) return
+		this.isShowing = false
+		this.reportChange()
 	}
 
 	// return an array of Footprint from a STC-S string
 	static parseSTCS(stcs) {
-		var footprints = [];
-		var parts = stcs.match(/\S+/g);
-		var k = 0, len = parts.length;
+		var footprints = []
+		var parts = stcs.match(/\S+/g)
+		var k = 0, len = parts.length
 		while(k<len) {
-			var s = parts[k].toLowerCase();
+			var s = parts[k].toLowerCase()
 			if(s=='polygon') {
-				var curPolygon = [];
-				k++;
-				frame = parts[k].toLowerCase();
+				var curPolygon = []
+				k++
+				frame = parts[k].toLowerCase()
 				if (frame=='icrs' || frame=='j2000' || frame=='fk5') {
 					while(k+2<len) {
-						var ra = parseFloat(parts[k+1]);
+						var ra = parseFloat(parts[k+1])
 						if (isNaN(ra)) {
-							break;
+							break
 						}
-						var dec = parseFloat(parts[k+2]);
-						curPolygon.push([ra, dec]);
-						k += 2;
+						var dec = parseFloat(parts[k+2])
+						curPolygon.push([ra, dec])
+						k += 2
 					}
-					curPolygon.push(curPolygon[0]);
-					footprints.push(new Footprint(curPolygon));
+					curPolygon.push(curPolygon[0])
+					footprints.push(new Footprint(curPolygon))
 				}
 			}
 			else if (s=='circle') {
-				var frame;
-				k++;
-				frame = parts[k].toLowerCase();
+				var frame
+				k++
+				frame = parts[k].toLowerCase()
 
 				if (frame=='icrs' || frame=='j2000' || frame=='fk5') {
-					var ra, dec, radiusDegrees;
+					var ra, dec, radiusDegrees
 
-					ra = parseFloat(parts[k+1]);
-					dec = parseFloat(parts[k+2]);
-					radiusDegrees = parseFloat(parts[k+3]);
+					ra = parseFloat(parts[k+1])
+					dec = parseFloat(parts[k+2])
+					radiusDegrees = parseFloat(parts[k+3])
 
-					footprints.push(A.circle(ra, dec, radiusDegrees));
+					footprints.push(A.circle(ra, dec, radiusDegrees))
 
-					k += 3;
+					k += 3
 				}
 			}
 
-			k++;
+			k++
 		}
 
-		return footprints;
+		return footprints
 	}
 
 	// ajout d'un tableau d'overlays (= objets Footprint, Circle ou Polyline)
 	addFootprints(overlaysToAdd) {
 		for (var k=0, len=overlaysToAdd.length; k<len; k++) {
-			this.add(overlaysToAdd[k], false);
+			this.add(overlaysToAdd[k], false)
 		}
-		this.view.requestRedraw();
+		this.view.requestRedraw()
 	}
 
 	// TODO : item doit pouvoir prendre n'importe quoi en param (footprint, circle, polyline)
 	add(item, requestRedraw) {
-		requestRedraw = requestRedraw !== undefined ? requestRedraw : true;
+		requestRedraw = requestRedraw !== undefined ? requestRedraw : true
 
-		if (item instanceof Footprint) this.overlays.push(item);
-		else                           this.overlay_items.push(item);
-		item.setOverlay(this);
+		if (item instanceof Footprint) this.overlays.push(item)
+		else                           this.overlay_items.push(item)
+		item.setOverlay(this)
 
-		if (requestRedraw) this.view.requestRedraw();
+		if (requestRedraw) this.view.requestRedraw()
 	}
 
 	// return a footprint by index
 	getFootprint(idx) {
-		if (idx<this.footprints.length) return this.footprints[idx];
-		else                            return null;
+		if (idx<this.footprints.length) return this.footprints[idx]
+		else                            return null
 	}
 
 	setView(view) { this.view = view }
 
 	removeAll() {
 		// TODO : RAZ de l'index
-		this.overlays = [];
-		this.overlay_items = [];
+		this.overlays = []
+		this.overlay_items = []
 	}
 
 	draw(ctx, projection, frame, width, height, largestDim, zoomFactor) {
-		if (!this.isShowing) return;
+		if (!this.isShowing) return
 
 		// simple drawing
-		ctx.strokeStyle= this.color;
+		ctx.strokeStyle= this.color
 
 		// 1. Drawing polygons
 
 		// TODO: les overlay polygons devrait se tracer lui meme (methode draw)
-		ctx.lineWidth = this.lineWidth;
-		ctx.beginPath();
-		xyviews = [];
+		ctx.lineWidth = this.lineWidth
+		ctx.beginPath()
+		xyviews = []
 		for (var k=0, len = this.overlays.length; k<len; k++) {
-			xyviews.push(this.drawFootprint(this.overlays[k], ctx, projection, frame, width, height, largestDim, zoomFactor));
+			xyviews.push(this.drawFootprint(this.overlays[k], ctx, projection, frame, width, height, largestDim, zoomFactor))
 		}
-		ctx.stroke();
+		ctx.stroke()
 
 		// selection drawing
-		ctx.strokeStyle= Overlay.increaseBrightness(this.color, 50);
-		ctx.beginPath();
+		ctx.strokeStyle= Overlay.increaseBrightness(this.color, 50)
+		ctx.beginPath()
 		for (var k=0, len = this.overlays.length; k<len; k++) {
-			if (! this.overlays[k].isSelected) continue;
-			this.drawFootprintSelected(ctx, xyviews[k]);
+			if (! this.overlays[k].isSelected) continue
+			this.drawFootprintSelected(ctx, xyviews[k])
 
 		}
-		ctx.stroke();
+		ctx.stroke()
 
 		// 2. Circle and polylines drawing
 		for (var k=0; k<this.overlay_items.length; k++) {
-			this.overlay_items[k].draw(ctx, projection, frame, width, height, largestDim, zoomFactor);
+			this.overlay_items[k].draw(ctx, projection, frame, width, height, largestDim, zoomFactor)
 		}
 	}
 
 	static increaseBrightness(hex, percent){
 		// strip the leading # if it's there
-		hex = hex.replace(/^\s*#|\s*$/g, '');
+		hex = hex.replace(/^\s*#|\s*$/g, '')
 
 		// convert 3 char codes --> 6, e.g. `E0F` --> `EE00FF`
-		if(hex.length == 3) hex = hex.replace(/(.)/g, '$1$1');
+		if(hex.length == 3) hex = hex.replace(/(.)/g, '$1$1')
 
 		var r = parseInt(hex.substr(0, 2), 16),
 			g = parseInt(hex.substr(2, 2), 16),
-			b = parseInt(hex.substr(4, 2), 16);
+			b = parseInt(hex.substr(4, 2), 16)
 
 		return '#' +
 				((0|(1<<8) + r + (256 - r) * percent / 100).toString(16)).substr(1) +
 				((0|(1<<8) + g + (256 - g) * percent / 100).toString(16)).substr(1) +
-				((0|(1<<8) + b + (256 - b) * percent / 100).toString(16)).substr(1);
+				((0|(1<<8) + b + (256 - b) * percent / 100).toString(16)).substr(1)
 	}
 
 	drawFootprint(f, ctx, projection, frame, width, height, largestDim, zoomFactor) {
-		if (! f.isShowing) return null;
-		var xyviewArray = [];
-		var show = false;
-		var radecArray = f.polygons;
+		if (! f.isShowing) return null
+		var xyviewArray = []
+		var show = false
+		var radecArray = f.polygons
 		// for
 			for (var k=0, len=radecArray.length; k<len; k++) {
-				var xy;
+				var xy
 				if (frame.system != CooFrameEnum.SYSTEMS.J2000) {
-					var lonlat = CooConversion.J2000ToGalactic([radecArray[k][0], radecArray[k][1]]);
-					xy = projection.project(lonlat[0], lonlat[1]);
+					var lonlat = CooConversion.J2000ToGalactic([radecArray[k][0], radecArray[k][1]])
+					xy = projection.project(lonlat[0], lonlat[1])
 				}
 				else {
-					xy = projection.project(radecArray[k][0], radecArray[k][1]);
+					xy = projection.project(radecArray[k][0], radecArray[k][1])
 				}
 				if (!xy) {
-					return null;
+					return null
 				}
-				var xyview = AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor);
-				xyviewArray.push(xyview);
+				var xyview = AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor)
+				xyviewArray.push(xyview)
 				if (!show && xyview.vx<width  && xyview.vx>=0 && xyview.vy<=height && xyview.vy>=0) {
-					show = true;
+					show = true
 				}
 			}
 
 			if (show) {
-				ctx.moveTo(xyviewArray[0].vx, xyviewArray[0].vy);
+				ctx.moveTo(xyviewArray[0].vx, xyviewArray[0].vy)
 				for (var k=1, len=xyviewArray.length; k<len; k++) {
-					ctx.lineTo(xyviewArray[k].vx, xyviewArray[k].vy);
+					ctx.lineTo(xyviewArray[k].vx, xyviewArray[k].vy)
 				}
 			}
 			else {
-				//return null;
+				//return null
 			}
 		// end for
 
-		return xyviewArray;
+		return xyviewArray
 	}
 
 	drawFootprintSelected(ctx, xyview) {
-		if (!xyview) return;
-		var xyviewArray = xyview;
-		ctx.moveTo(xyviewArray[0].vx, xyviewArray[0].vy);
+		if (!xyview) return
+		var xyviewArray = xyview
+		ctx.moveTo(xyviewArray[0].vx, xyviewArray[0].vy)
 		for (var k=1, len=xyviewArray.length; k<len; k++) {
-			ctx.lineTo(xyviewArray[k].vx, xyviewArray[k].vy);
+			ctx.lineTo(xyviewArray[k].vx, xyviewArray[k].vy)
 		}
 	}
 
