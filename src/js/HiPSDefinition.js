@@ -499,7 +499,7 @@ class HiPSDefinition {
 
 	// find a HiPSDefinition by id.
 	// search is done on the local knowledge of HiPSDefinitions
-	static findByIDLocal(id2search, callback) {
+	static findByIDLocal(id2search) {
 		var candidates = [];
 		for (var k=0; k<listHipsProperties.length; k++) {
 			var properties = listHipsProperties[k];
