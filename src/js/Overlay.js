@@ -211,7 +211,7 @@ class Overlay {
 			}
 			var xyview = AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor)
 			xyviewArray.push(xyview)
-			if (!show && xyview.vx<width  && xyview.vx>=0 && xyview.vy<=height && xyview.vy>=0) {
+			if (!show && xyview.vx<width && xyview.vx>=0 && xyview.vy<=height && xyview.vy>=0) {
 				show = true
 			}
 		}
@@ -228,10 +228,9 @@ class Overlay {
 
 	drawFootprintSelected(ctx, xyview) {
 		if (!xyview) return
-		var xyviewArray = xyview
-		ctx.moveTo(xyviewArray[0].vx, xyviewArray[0].vy)
-		for (var k=1, len=xyviewArray.length; k<len; k++) {
-			ctx.lineTo(xyviewArray[k].vx, xyviewArray[k].vy)
+		ctx.moveTo(xyview[0].vx, xyview[0].vy)
+		for (var k=1, len=xyview.length; k<len; k++) {
+			ctx.lineTo(xyview[k].vx, xyview[k].vy)
 		}
 	}
 
