@@ -424,14 +424,7 @@ class HiPSDefinition {
 	}
 
 	// return list of known HiPSDefinition objects
-	static getDefinitions() {
-		let ret = []
-		for (let k=0; k<listHipsProperties.length; k++) {
-			let properties = listHipsProperties[k]
-			ret.push(new HiPSDefinition(properties))
-		}
-		return ret
-	}
+	static getDefinitions() { return listHipsProperties.map( propt => new HiPSDefinition(propt) ) }
 
 	// parse a HiPS properties and return a dict-like object with corresponding key-values
 	// return null if parsing failed
