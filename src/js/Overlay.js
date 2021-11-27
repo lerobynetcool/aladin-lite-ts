@@ -186,9 +186,9 @@ class Overlay {
 			b = parseInt(hex.substr(4, 2), 16)
 
 		return '#' +
-				((0|(1<<8) + r + (256 - r) * percent / 100).toString(16)).substr(1) +
-				((0|(1<<8) + g + (256 - g) * percent / 100).toString(16)).substr(1) +
-				((0|(1<<8) + b + (256 - b) * percent / 100).toString(16)).substr(1)
+			((0|(1<<8) + r + (256 - r) * percent / 100).toString(16)).substr(1) +
+			((0|(1<<8) + g + (256 - g) * percent / 100).toString(16)).substr(1) +
+			((0|(1<<8) + b + (256 - b) * percent / 100).toString(16)).substr(1)
 	}
 
 	drawFootprint(f, ctx, projection, frame, width, height, largestDim, zoomFactor) {
@@ -196,36 +196,32 @@ class Overlay {
 		var xyviewArray = []
 		var show = false
 		var radecArray = f.polygons
-		// for
-			for (var k=0, len=radecArray.length; k<len; k++) {
-				var xy
-				if (frame.system != CooFrameEnum.SYSTEMS.J2000) {
-					var lonlat = CooConversion.J2000ToGalactic([radecArray[k][0], radecArray[k][1]])
-					xy = projection.project(lonlat[0], lonlat[1])
-				}
-				else {
-					xy = projection.project(radecArray[k][0], radecArray[k][1])
-				}
-				if (!xy) {
-					return null
-				}
-				var xyview = AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor)
-				xyviewArray.push(xyview)
-				if (!show && xyview.vx<width  && xyview.vx>=0 && xyview.vy<=height && xyview.vy>=0) {
-					show = true
-				}
-			}
 
-			if (show) {
-				ctx.moveTo(xyviewArray[0].vx, xyviewArray[0].vy)
-				for (var k=1, len=xyviewArray.length; k<len; k++) {
-					ctx.lineTo(xyviewArray[k].vx, xyviewArray[k].vy)
-				}
+		for (var k=0, len=radecArray.length; k<len; k++) {
+			var xy
+			if (frame.system != CooFrameEnum.SYSTEMS.J2000) {
+				var lonlat = CooConversion.J2000ToGalactic([radecArray[k][0], radecArray[k][1]])
+				xy = projection.project(lonlat[0], lonlat[1])
 			}
 			else {
-				//return null
+				xy = projection.project(radecArray[k][0], radecArray[k][1])
 			}
-		// end for
+			if (!xy) {
+				return null
+			}
+			var xyview = AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor)
+			xyviewArray.push(xyview)
+			if (!show && xyview.vx<width  && xyview.vx>=0 && xyview.vy<=height && xyview.vy>=0) {
+				show = true
+			}
+		}
+
+		if (show) {
+			ctx.moveTo(xyviewArray[0].vx, xyviewArray[0].vy)
+			for (var k=1, len=xyviewArray.length; k<len; k++) {
+				ctx.lineTo(xyviewArray[k].vx, xyviewArray[k].vy)
+			}
+		}
 
 		return xyviewArray
 	}
