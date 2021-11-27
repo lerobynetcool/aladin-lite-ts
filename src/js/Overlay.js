@@ -31,20 +31,18 @@
 class Overlay {
 	type = 'overlay'
 
+	isShowing = true
+	overlays = []
+	overlay_items = [] // currently Circle or Polyline
+
 	constructor(options = {}) {
+		this.name      = options.name || "overlay"
+		this.color     = options.color || Color.getNextColor()
+		this.lineWidth = options.lineWidth || 2
 
-		this.name = options.name || "overlay"
-		this.color = options.color || Color.getNextColor()
-
-		this.lineWidth = options["lineWidth"] || 2
-
-		//this.indexationNorder = 5; // at which level should we index overlays?
-		this.overlays = []
-		this.overlay_items = [] // currently Circle or Polyline
+		//this.indexationNorder = 5 // at which level should we index overlays?
 		//this.hpxIdx = new HealpixIndex(this.indexationNorder)
 		//this.hpxIdx.init()
-
-		this.isShowing = true
 	}
 
 	// TODO : show/hide methods should be integrated in a parent class
@@ -64,19 +62,18 @@ class Overlay {
 	static parseSTCS(stcs) {
 		let footprints = []
 		let parts = stcs.match(/\S+/g)
-		let k = 0, len = parts.length
+		let k = 0
+		let len = parts.length
 		while(k<len) {
 			let s = parts[k].toLowerCase()
 			if(s=='polygon') {
 				let curPolygon = []
 				k++
-				frame = parts[k].toLowerCase()
+				let frame = parts[k].toLowerCase()
 				if (frame=='icrs' || frame=='j2000' || frame=='fk5') {
 					while(k+2<len) {
 						let ra = parseFloat(parts[k+1])
-						if (isNaN(ra)) {
-							break
-						}
+						if (isNaN(ra)) break
 						let dec = parseFloat(parts[k+2])
 						curPolygon.push([ra, dec])
 						k += 2
@@ -86,51 +83,38 @@ class Overlay {
 				}
 			}
 			else if (s=='circle') {
-				let frame
 				k++
-				frame = parts[k].toLowerCase()
-
+				let frame = parts[k].toLowerCase()
 				if (frame=='icrs' || frame=='j2000' || frame=='fk5') {
-					let ra, dec, radiusDegrees
-
-					ra = parseFloat(parts[k+1])
-					dec = parseFloat(parts[k+2])
-					radiusDegrees = parseFloat(parts[k+3])
-
+					let ra = parseFloat(parts[k+1])
+					let dec = parseFloat(parts[k+2])
+					let radiusDegrees = parseFloat(parts[k+3])
 					footprints.push(A.circle(ra, dec, radiusDegrees))
-
 					k += 3
 				}
 			}
-
 			k++
 		}
-
 		return footprints
 	}
 
 	// ajout d'un tableau d'overlays (= objets Footprint, Circle ou Polyline)
 	addFootprints(overlaysToAdd) {
-		overlaysToAdd.forEach( o => this.add(o, false) )
+		let self = this
+		overlaysToAdd.forEach( o => self.add(o, false) )
 		this.view.requestRedraw()
 	}
 
 	// TODO : item doit pouvoir prendre n'importe quoi en param (footprint, circle, polyline)
-	add(item, requestRedraw) {
-		requestRedraw = requestRedraw !== undefined ? requestRedraw : true
-
+	add(item, requestRedraw = true) {
 		if (item instanceof Footprint) this.overlays.push(item)
 		else                           this.overlay_items.push(item)
 		item.setOverlay(this)
-
 		if (requestRedraw) this.view.requestRedraw()
 	}
 
 	// return a footprint by index
-	getFootprint(idx) {
-		if (idx<this.footprints.length) return this.footprints[idx]
-		else                            return null
-	}
+	getFootprint(idx) { return idx < this.footprints.length ? this.footprints[idx] : null }
 
 	setView(view) { this.view = view }
 
@@ -151,21 +135,17 @@ class Overlay {
 		// TODO: les overlay polygons devrait se tracer lui meme (methode draw)
 		ctx.lineWidth = this.lineWidth
 		ctx.beginPath()
-		let xyviews = this.overlays.map( o => this.drawFootprint(o, ctx, projection, frame, width, height, largestDim, zoomFactor))
+		let xyviews = this.overlays.map( o => this.drawFootprint(o, ctx, projection, frame, width, height, largestDim, zoomFactor) )
 		ctx.stroke()
 
 		// selection drawing
 		ctx.strokeStyle= Overlay.increaseBrightness(this.color, 50)
 		ctx.beginPath()
-		for (let k=0, len = this.overlays.length; k<len; k++) {
-			if (this.overlays[k].isSelected) this.drawFootprintSelected(ctx, xyviews[k])
-		}
+		this.overlays.forEach( (o,i) => { if (o.isSelected) this.drawFootprintSelected(ctx, xyviews[i]) })
 		ctx.stroke()
 
 		// 2. Circle and polylines drawing
-		for (let k=0; k<this.overlay_items.length; k++) {
-			this.overlay_items[k].draw(ctx, projection, frame, width, height, largestDim, zoomFactor)
-		}
+		this.overlay_items.forEach( o => o.draw(ctx, projection, frame, width, height, largestDim, zoomFactor) )
 	}
 
 	static increaseBrightness(hex, percent){
@@ -189,15 +169,12 @@ class Overlay {
 		if (!f.isShowing) return null
 		let show = false
 		let xyviews = f.polygons.map( radec => {
-			let xy
 			if (frame.system != CooFrameEnum.SYSTEMS.J2000) {
-				let lonlat = CooConversion.J2000ToGalactic([radec[0], radec[1]])
-				xy = projection.project(lonlat[0], lonlat[1])
+				radec = CooConversion.J2000ToGalactic([radec[0], radec[1]])
 			}
-			else {
-				xy = projection.project(radec[0], radec[1])
-			}
+			let xy = projection.project(radec[0], radec[1])
 			if (!xy) return null
+
 			let xyview = AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor)
 			if (!show && xyview.vx<width && xyview.vx>=0 && xyview.vy<=height && xyview.vy>=0) {
 				show = true
