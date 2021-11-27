@@ -28,14 +28,29 @@
  *
  *****************************************************************************/
 
-class Overlay {
+import { Color } from './Color'
+import { CooFrameEnum } from './CooFrameEnum'
+import { CooConversion } from './CooConversion'
+import { AladinUtils } from './AladinUtils'
+import { Circle, Footprint, Polyline, FigureANameForThis } from './CircleFootprintPolyline'
+import { View } from './View'
+import { Projection } from './libs/astro/projection'
+import { Vxy } from './Basic'
+
+export class Overlay {
 	type = 'overlay'
+	name: string
+	color: string
+	lineWidth: number // TODO or css string ?
 
 	isShowing = true
-	overlays = []
-	overlay_items = [] // currently Circle or Polyline
+	overlays: any[] = []
+	overlay_items: FigureANameForThis[] = [] // currently Circle or Polyline
 
-	constructor(options = {}) {
+	footprints: FigureANameForThis[] = []
+	view?: View
+
+	constructor(options: any = {}) {
 		this.name      = options.name || "overlay"
 		this.color     = options.color || Color.getNextColor()
 		this.lineWidth = options.lineWidth || 2
@@ -59,15 +74,15 @@ class Overlay {
 	}
 
 	// return an array of Footprint from a STC-S string
-	static parseSTCS(stcs) {
-		let footprints = []
-		let parts = stcs.match(/\S+/g)
+	static parseSTCS(stcs: string): FigureANameForThis[] {
+		let footprints: FigureANameForThis[] = []
+		let parts = stcs.match(/\S+/g) || []
 		let k = 0
 		let len = parts.length
 		while(k<len) {
 			let s = parts[k].toLowerCase()
 			if(s=='polygon') {
-				let curPolygon = []
+				let curPolygon: number[][] = []
 				k++
 				let frame = parts[k].toLowerCase()
 				if (frame=='icrs' || frame=='j2000' || frame=='fk5') {
@@ -89,7 +104,7 @@ class Overlay {
 					let ra = parseFloat(parts[k+1])
 					let dec = parseFloat(parts[k+2])
 					let radiusDegrees = parseFloat(parts[k+3])
-					footprints.push(A.circle(ra, dec, radiusDegrees))
+					footprints.push(new Circle([ra, dec], radiusDegrees))
 					k += 3
 				}
 			}
@@ -99,24 +114,24 @@ class Overlay {
 	}
 
 	// ajout d'un tableau d'overlays (= objets Footprint, Circle ou Polyline)
-	addFootprints(overlaysToAdd) {
+	addFootprints(overlaysToAdd: FigureANameForThis[]) {
 		let self = this
-		overlaysToAdd.forEach( o => self.add(o, false) )
-		this.view.requestRedraw()
+		overlaysToAdd.forEach(e => self.add(e,false))
+		this.view?.requestRedraw()
 	}
 
 	// TODO : item doit pouvoir prendre n'importe quoi en param (footprint, circle, polyline)
-	add(item, requestRedraw = true) {
+	add(item: FigureANameForThis, requestRedraw = true) {
 		if (item instanceof Footprint) this.overlays.push(item)
 		else                           this.overlay_items.push(item)
 		item.setOverlay(this)
-		if (requestRedraw) this.view.requestRedraw()
+		if (requestRedraw) this.view?.requestRedraw()
 	}
 
 	// return a footprint by index
-	getFootprint(idx) { return idx < this.footprints.length ? this.footprints[idx] : null }
+	getFootprint(idx: number) { return idx < this.footprints.length ? this.footprints[idx] : null }
 
-	setView(view) { this.view = view }
+	setView(view: View) { this.view = view }
 
 	removeAll() {
 		// TODO : RAZ de l'index
@@ -124,7 +139,7 @@ class Overlay {
 		this.overlay_items = []
 	}
 
-	draw(ctx, projection, frame, width, height, largestDim, zoomFactor) {
+	draw(ctx: CanvasRenderingContext2D, projection: Projection, frame: any, width: number, height: number, largestDim: number, zoomFactor: number) {
 		if (!this.isShowing) return
 
 		// simple drawing
@@ -148,7 +163,7 @@ class Overlay {
 		this.overlay_items.forEach( o => o.draw(ctx, projection, frame, width, height, largestDim, zoomFactor) )
 	}
 
-	static increaseBrightness(hex, percent){
+	static increaseBrightness(hex: string, percent: number): string {
 		// strip the leading # if it's there
 		hex = hex.replace(/^\s*#|\s*$/g, '')
 
@@ -165,10 +180,10 @@ class Overlay {
 			((0|(1<<8) + b + (256 - b) * percent / 100).toString(16)).substr(1)
 	}
 
-	drawFootprint(f, ctx, projection, frame, width, height, largestDim, zoomFactor) {
+	drawFootprint(f: any, ctx: CanvasRenderingContext2D, projection: Projection, frame: any, width: number, height: number, largestDim: number, zoomFactor: number) {
 		if (!f.isShowing) return null
 		let show = false
-		let xyviews = f.polygons.map( radec => {
+		let xyviews = f.polygons.map( (radec: number[]) => {
 			if (frame.system != CooFrameEnum.SYSTEMS.J2000) {
 				radec = CooConversion.J2000ToGalactic([radec[0], radec[1]])
 			}
@@ -187,7 +202,7 @@ class Overlay {
 		return xyviews
 	}
 
-	drawFootprintSelected(ctx, xyviews) {
+	drawFootprintSelected(ctx: CanvasRenderingContext2D, xyviews?: Vxy[]) {
 		if (!xyviews) return
 		ctx.moveTo(xyviews[0].vx, xyviews[0].vy)
 		for (let k=1, len=xyviews.length; k<len; k++) {
@@ -196,5 +211,5 @@ class Overlay {
 	}
 
 	// callback function to be called when the status of one of the footprints has changed
-	reportChange() { this.view.requestRedraw() }
+	reportChange() { this.view?.requestRedraw() }
 }
