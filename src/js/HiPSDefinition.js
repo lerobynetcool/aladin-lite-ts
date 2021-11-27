@@ -25,60 +25,10 @@
  * Author: Thomas Boch [CDS]
  *
  *****************************************************************************/
-HiPSDefinition = (function() {
 
-	// constructor
-	var HiPSDefinition = function(properties) {
-		this.properties = properties; // key-value object corresponding to the properties file
-
-		this.id = this.getID();
-		this.obsTitle = properties['obs_title'];
-		this.frame = properties['hips_frame'];
-		this.order = parseInt(properties['hips_order']);
-		this.clientSortKey = properties['client_sort_key'];
-		this.tileFormats = properties.hasOwnProperty('hips_tile_format') && properties['hips_tile_format'].split(' ');
-		this.urls = [];
-		this.urls.push(properties['hips_service_url']);
-		var k = 1;
-		while (properties.hasOwnProperty('hips_service_url_' + k)) {
-			this.urls.push(properties['hips_service_url_' + k]);
-			k++;
-		}
-
-		this.clientApplications = properties['client_application'];
-	};
-
-	HiPSDefinition.prototype = {
-		getServiceURLs: function(httpsOnly) {
-			httpsOnly = httpsOnly === true;
-			// TODO: TO BE COMPLETED
-		},
-
-		// return the ID according to the properties
-		getID: function() {
-			// ID is explicitely given
-			if (this.properties.hasOwnProperty('ID')) return this.properties['ID'];
-
-			var id = null;
-			// ID might be built from different fields
-			if (this.properties.hasOwnProperty('creator_did'))               id = this.properties['creator_did'];
-			if (id==null && this.properties.hasOwnProperty('publisher_did')) id = this.properties['publisher_did'];
-
-			if (id != null) {
-				// remove ivo:// prefix
-				if (id.slice(0, 6) === 'ivo://') id = id.slice(6);
-
-				// '?' are replaced by '/'
-				id = id.replace(/\?/g, '/')
-			}
-
-			return id;
-		}
-	};
-
-	// cache (at the source code level) of the list of HiPS
-	// this is the result to a query to http://alasky.u-strasbg.fr/MocServer/query?dataproduct_type=image&client_application=AladinLite&fmt=json&fields=ID,obs_title,client_sort_key,client_application,hips_service_url*,hips_order,hips_tile_format,hips_frame
-	var AL_CACHE_CLASS_LEVEL = [{
+// cache (at the source code level) of the list of HiPS
+// this is the result to a query to http://alasky.u-strasbg.fr/MocServer/query?dataproduct_type=image&client_application=AladinLite&fmt=json&fields=ID,obs_title,client_sort_key,client_application,hips_service_url*,hips_order,hips_tile_format,hips_frame
+let AL_CACHE_CLASS_LEVEL = [{
 	"ID": "CDS/P/2MASS/color",
 	"obs_title": "2MASS color J (1.23 microns), H (1.66 microns), K (2.16 microns)",
 	"client_sort_key": "04-001-00",
@@ -305,17 +255,97 @@ HiPSDefinition = (function() {
 	"hips_service_url_1": "http://alasky.u-strasbg.fr/SSC/xcatdb_P_XMM_PN_color",
 	"hips_service_url_2": "http://alaskybis.u-strasbg.fr/SSC/xcatdb_P_XMM_PN_color",
 	"hips_service_url_3": "https://alaskybis.u-strasbg.fr/SSC/xcatdb_P_XMM_PN_color"
-}];
+}]
 
-	var listHipsProperties = []; // this variable stores our current knowledge
+let listHipsProperties = [] // this variable stores our current knowledge
 
-	HiPSDefinition.LOCAL_STORAGE_KEY = 'aladin:hips-list';
+let RETRIEVAL_TIMESTAMP_KEY = '_timestamp_retrieved'
+let LAST_URL_KEY = '_last_used_url' // URL previousy used to retrieve data from this HiPS
 
-	var RETRIEVAL_TIMESTAMP_KEY = '_timestamp_retrieved';
-	var LAST_URL_KEY = '_last_used_url'; // URL previousy used to retrieve data from this HiPS
+let MOCSERVER_MIRRORS_HTTP = ['http://alasky.u-strasbg.fr/MocServer/query', 'http://alaskybis.u-strasbg.fr/MocServer/query']; // list of base URL for MocServer mirrors, available in HTTP
+let MOCSERVER_MIRRORS_HTTPS = ['https://alasky.u-strasbg.fr/MocServer/query', 'https://alaskybis.unistra.fr/MocServer/query']; // list of base URL for MocServer mirrors, available in HTTPS
+
+// complement the baseList with the items in newList
+function merge(baseList, newList) {
+	var updatedList = [];
+	var newListById = {};
+	for (var k=0; k<newList.length; k++) {
+		var item = newList[k];
+		newListById[item.ID] = item;
+	}
+
+	for (var k=0; k<baseList.length; k++) {
+		var item = baseList[k];
+		var id = item.ID;
+		if (newListById.hasOwnProperty(id)) {
+			var itemToAdd = newListById[id];
+			// we keep the last used URL property
+			if (item.hasOwnProperty(LAST_URL_KEY) && ! itemToAdd.hasOwnProperty(LAST_URL_KEY)) {
+				itemToAdd[LAST_URL_KEY] = item[LAST_URL_KEY];
+			}
+			updatedList.push(itemToAdd);
+		}
+		else {
+			updatedList.push(item);
+		}
+	}
+	return updatedList;
+}
+
+class HiPSDefinition {
+
+	// constructor
+	constructor(properties) {
+		this.properties = properties; // key-value object corresponding to the properties file
+
+		this.id = this.getID();
+		this.obsTitle = properties['obs_title'];
+		this.frame = properties['hips_frame'];
+		this.order = parseInt(properties['hips_order']);
+		this.clientSortKey = properties['client_sort_key'];
+		this.tileFormats = properties.hasOwnProperty('hips_tile_format') && properties['hips_tile_format'].split(' ');
+		this.urls = [];
+		this.urls.push(properties['hips_service_url']);
+		var k = 1;
+		while (properties.hasOwnProperty('hips_service_url_' + k)) {
+			this.urls.push(properties['hips_service_url_' + k]);
+			k++;
+		}
+
+		this.clientApplications = properties['client_application'];
+	}
+
+	getServiceURLs(httpsOnly) {
+		httpsOnly = httpsOnly === true;
+		// TODO: TO BE COMPLETED
+	}
+
+	// return the ID according to the properties
+	getID() {
+		// ID is explicitely given
+		if (this.properties.hasOwnProperty('ID')) return this.properties['ID'];
+
+		var id = null;
+		// ID might be built from different fields
+		if (this.properties.hasOwnProperty('creator_did'))               id = this.properties['creator_did'];
+		if (id==null && this.properties.hasOwnProperty('publisher_did')) id = this.properties['publisher_did'];
+
+		if (id != null) {
+			// remove ivo:// prefix
+			if (id.slice(0, 6) === 'ivo://') id = id.slice(6);
+
+			// '?' are replaced by '/'
+			id = id.replace(/\?/g, '/')
+		}
+
+		return id;
+	}
+
+	static LOCAL_STORAGE_KEY = 'aladin:hips-list'
+
 	// retrieve definitions previousy stored in local storage
 	// @return an array with the HiPS definitions, empty array if nothing found or if an error occured
-	HiPSDefinition.getLocalStorageDefinitions = function() {
+	static getLocalStorageDefinitions() {
 		try {
 			var defs = window.localStorage.getItem(HiPSDefinition.LOCAL_STORAGE_KEY);
 			return defs === null ? [] : window.JSON.parse(defs);
@@ -324,11 +354,11 @@ HiPSDefinition = (function() {
 			// silently fail and return empty array
 			return [];
 		}
-	};
+	}
 
 	// store in local storage a list of HiPSDefinition objects
 	// @return true if storage was successful
-	HiPSDefinition.storeInLocalStorage = function(properties) {
+	static storeInLocalStorage(properties) {
 		try {
 			window.localStorage.setItem(HiPSDefinition.LOCAL_STORAGE_KEY, window.JSON.stringify(properties));
 		}
@@ -336,16 +366,12 @@ HiPSDefinition = (function() {
 			// silently fail and return false
 			return false;
 		}
-
 		return true;
-	};
-
-	var MOCSERVER_MIRRORS_HTTP = ['http://alasky.u-strasbg.fr/MocServer/query', 'http://alaskybis.u-strasbg.fr/MocServer/query']; // list of base URL for MocServer mirrors, available in HTTP
-	var MOCSERVER_MIRRORS_HTTPS = ['https://alasky.u-strasbg.fr/MocServer/query', 'https://alaskybis.unistra.fr/MocServer/query']; // list of base URL for MocServer mirrors, available in HTTPS
+	}
 
 	// get HiPS definitions, by querying the MocServer
 	// return data as dict-like objects
-	HiPSDefinition.getRemoteDefinitions = function(params, successCallbackFn, failureCallbackFn) {
+	static getRemoteDefinitions(params, successCallbackFn, failureCallbackFn) {
 		var params = params || {client_application: 'AladinLite'}; // by default, retrieve only HiPS tagged "Aladin Lite"
 
 		params['fmt'] = 'json';
@@ -362,38 +388,10 @@ HiPSDefinition = (function() {
 		};
 
 		Utils.loadFromMirrors(urls, {data: params, onSuccess: successCallback, onFailure: failureCallback, timeout: 5});
-	};
+	}
 
-	// complement the baseList with the items in newList
-	var merge = function(baseList, newList) {
-		var updatedList = [];
-		var newListById = {};
-		for (var k=0; k<newList.length; k++) {
-			var item = newList[k];
-			newListById[item.ID] = item;
-		}
-
-		for (var k=0; k<baseList.length; k++) {
-			var item = baseList[k];
-			var id = item.ID;
-			if (newListById.hasOwnProperty(id)) {
-				var itemToAdd = newListById[id];
-				// we keep the last used URL property
-				if (item.hasOwnProperty(LAST_URL_KEY) && ! itemToAdd.hasOwnProperty(LAST_URL_KEY)) {
-					itemToAdd[LAST_URL_KEY] = item[LAST_URL_KEY];
-				}
-				updatedList.push(itemToAdd);
-			}
-			else {
-				updatedList.push(item);
-			}
-		}
-
-		return updatedList;
-	};
-
-	HiPSDefinition.CACHE_RETENTION_TIME_SECONDS = 7 * 86400; // definitions can be kept 7 days
-	HiPSDefinition.init = function() {
+	static CACHE_RETENTION_TIME_SECONDS = 7 * 86400; // definitions can be kept 7 days
+	static init() {
 		// first, merge local definitions at class level with definitions in local storage
 		listHipsProperties = AL_CACHE_CLASS_LEVEL;
 
@@ -425,11 +423,10 @@ HiPSDefinition = (function() {
 			listHipsProperties = merge(listHipsProperties, remoteDefs);
 			HiPSDefinition.storeInLocalStorage(listHipsProperties);
 		});
-
-	};
+	}
 
 	// return list of HiPSDefinition objects, filtering out definitions whose client_application is not AladinLite
-	HiPSDefinition.getALDefaultHiPSDefinitions = function() {
+	static getALDefaultHiPSDefinitions() {
 		// filter out definitions with client_application != 'AladinLite'
 		var ret = [];
 		for (var k=0; k<listHipsProperties.length; k++) {
@@ -440,24 +437,22 @@ HiPSDefinition = (function() {
 
 			ret.push(new HiPSDefinition(properties));
 		}
-
 		return ret;
-	};
+	}
 
 	// return list of known HiPSDefinition objects
-	HiPSDefinition.getDefinitions = function() {
+	static getDefinitions() {
 		var ret = [];
 		for (var k=0; k<listHipsProperties.length; k++) {
 			var properties = listHipsProperties[k];
 			ret.push(new HiPSDefinition(properties));
 		}
-
 		return ret;
-	};
+	}
 
 	// parse a HiPS properties and return a dict-like object with corresponding key-values
 	// return null if parsing failed
-	HiPSDefinition.parseHiPSProperties = function(propertiesStr) {
+	static parseHiPSProperties(propertiesStr) {
 		if (propertiesStr==null) {
 			return null;
 		}
@@ -484,29 +479,27 @@ HiPSDefinition = (function() {
 		}
 
 		return propertiesDict;
-	};
-
+	}
 
 	// find a HiPSDefinition by id.
 	// look first locally, and remotely only if local search was unsuccessful
 	//
 	// call callback function with a list of HiPSDefinition candidates, empty array if nothing found
 
-	HiPSDefinition.findByID = function(id, callback) {
+	static findByID(id, callback) {
 		// look first locally
 		var candidates = findByIDLocal(id);
 		if (candidates.length>0) {
 			(typeof callback === 'function') && callback(candidates);
 			return;
 		}
-
 		// then remotely
 		findByIDRemote(id, callback);
-	};
+	}
 
 	// find a HiPSDefinition by id.
 	// search is done on the local knowledge of HiPSDefinitions
-	HiPSDefinition.findByIDLocal = function(id2search, callback) {
+	static findByIDLocal(id2search, callback) {
 		var candidates = [];
 		for (var k=0; k<listHipsProperties.length; k++) {
 			var properties = listHipsProperties[k];
@@ -515,17 +508,16 @@ HiPSDefinition = (function() {
 				candidates.push(new HiPSDefinition(properties));
 			}
 		}
-
 		return candidates;
-	};
+	}
 
 	// find remotely a HiPSDefinition by ID
-	HiPSDefinition.findByIDRemote = function(id, callback) {
+	static findByIDRemote(id, callback) {
 		HiPSDefinition.findHiPSRemote({ID: '*' + id + '*'}, callback);
-	};
+	}
 
 	// search a HiPS according to some criteria
-	HiPSDefinition.findHiPSRemote = function(searchOptions, callback) {
+	static findHiPSRemote(searchOptions, callback) {
 		searchOptions = searchOptions || {};
 		if (! searchOptions.hasOwnProperty('dataproduct_type')) {
 			searchOptions['dataproduct_type'] = 'image';
@@ -545,7 +537,7 @@ HiPSDefinition = (function() {
 	// else, it is assumed to be the base URL of the HiPS
 	//
 	// return a HiPSDefinition if successful, null if it failed
-	HiPSDefinition.fromURL = function(url, callback) {
+	static fromURL(url, callback) {
 		var hipsUrl, propertiesUrl;
 		if (url.slice(-10) === 'properties') {
 			propertiesUrl = url;
@@ -586,16 +578,13 @@ HiPSDefinition = (function() {
 						(typeof callback === 'function') && callback(null);
 					})
 			});
-	};
+	}
 
 	// HiPSDefinition generation from a properties dict-like object
-	HiPSDefinition.fromProperties = function(properties) {
+	static fromProperties(properties) {
 		return new HiPSDefinition(properties);
-	};
+	}
 
-	HiPSDefinition.init();
+}
 
-	return HiPSDefinition;
-
-})();
-
+HiPSDefinition.init()
