@@ -380,7 +380,7 @@ class HiPSDefinition {
 		let localDefs = HiPSDefinition.getLocalStorageDefinitions()
 		// 2.1 remove old defs
 		let now = new Date().getTime()
-		localDefs = localDefs.filter( def => !(def.hasOwnProperty(RETRIEVAL_TIMESTAMP_KEY) && (now - def[RETRIEVAL_TIMESTAMP_KEY]) > 1000 * HiPSDefinition.CACHE_RETENTION_TIME_SECONDS))
+		localDefs = localDefs.filter( def => !((now - def[RETRIEVAL_TIMESTAMP_KEY]) > 1000 * HiPSDefinition.CACHE_RETENTION_TIME_SECONDS) )
 
 		// 2.2 merge
 		listHipsProperties = merge(listHipsProperties, localDefs)
