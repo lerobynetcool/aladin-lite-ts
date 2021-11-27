@@ -269,8 +269,7 @@ let MOCSERVER_MIRRORS_HTTPS = ['https://alasky.u-strasbg.fr/MocServer/query', 'h
 function merge(baseList, newList) {
 	let newListById = {}
 	newList.forEach( item => newListById[item.ID] = item )
-
-	let updatedList = baseList.map( item => {
+	return baseList.map( item => {
 		let id = item.ID
 		if (newListById.hasOwnProperty(id)) {
 			let itemToAdd = newListById[id]
@@ -282,7 +281,6 @@ function merge(baseList, newList) {
 		}
 		else return item
 	})
-	return updatedList
 }
 
 class HiPSDefinition {
