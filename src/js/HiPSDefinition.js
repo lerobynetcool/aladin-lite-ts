@@ -486,15 +486,15 @@ class HiPSDefinition {
 	//
 	// call callback function with a list of HiPSDefinition candidates, empty array if nothing found
 
-	static findByID(id, callback) {
+	static findByID(id, callback = ()=>{}) {
 		// look first locally
 		var candidates = findByIDLocal(id);
 		if (candidates.length>0) {
-			(typeof callback === 'function') && callback(candidates);
-			return;
+			callback(candidates)
+			return
 		}
 		// then remotely
-		findByIDRemote(id, callback);
+		findByIDRemote(id, callback)
 	}
 
 	// find a HiPSDefinition by id.
@@ -517,7 +517,7 @@ class HiPSDefinition {
 	}
 
 	// search a HiPS according to some criteria
-	static findHiPSRemote(searchOptions, callback) {
+	static findHiPSRemote(searchOptions, callback = ()=>{}) {
 		searchOptions = searchOptions || {};
 		if (! searchOptions.hasOwnProperty('dataproduct_type')) {
 			searchOptions['dataproduct_type'] = 'image';
@@ -527,7 +527,7 @@ class HiPSDefinition {
 			for (var k=0; k<candidates.length; k++) {
 				defs.push(new HiPSDefinition(candidates[k]));
 			}
-			(typeof callback === 'function') && callback(defs);
+			callback(defs);
 		});
 	};
 
@@ -537,7 +537,7 @@ class HiPSDefinition {
 	// else, it is assumed to be the base URL of the HiPS
 	//
 	// return a HiPSDefinition if successful, null if it failed
-	static fromURL(url, callback) {
+	static fromURL(url, callback = ()=>{}) {
 		var hipsUrl, propertiesUrl;
 		if (url.slice(-10) === 'properties') {
 			propertiesUrl = url;
@@ -558,31 +558,23 @@ class HiPSDefinition {
 			if (! hipsPropertiesDict.hasOwnProperty('hips_service_url')) {
 				hipsPropertiesDict['hips_service_url'] = hipsUrl;
 			}
-			(typeof callback === 'function') && callback(new HiPSDefinition(hipsPropertiesDict));
-		};
+			callback(new HiPSDefinition(hipsPropertiesDict))
+		}
 
 		// try first without proxy
-		var ajax = Utils.getAjaxObject(propertiesUrl, 'GET', 'text', false);
-		ajax
-			.done(function(data) {
-				callbackWhenPropertiesLoaded(data);
-			})
-			.fail(function() {
+		Utils.getAjaxObject(propertiesUrl, 'GET', 'text', false)
+			.done( (data) => callbackWhenPropertiesLoaded(data) )
+			.fail( () => {
 				// if not working, try with the proxy
-				var ajax = Utils.getAjaxObject(propertiesUrl, 'GET', 'text', true);
-				ajax
-					.done(function(data) {
-						callbackWhenPropertiesLoaded(data);
-					})
-					.fail(function() {
-						(typeof callback === 'function') && callback(null);
-					})
-			});
+				Utils.getAjaxObject(propertiesUrl, 'GET', 'text', true)
+					.done( (data) => callbackWhenPropertiesLoaded(data) )
+					.fail( () => callback() )
+			})
 	}
 
 	// HiPSDefinition generation from a properties dict-like object
 	static fromProperties(properties) {
-		return new HiPSDefinition(properties);
+		return new HiPSDefinition(properties)
 	}
 
 }
