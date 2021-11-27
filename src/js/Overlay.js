@@ -157,9 +157,7 @@ class Overlay {
 		ctx.strokeStyle= Overlay.increaseBrightness(this.color, 50)
 		ctx.beginPath()
 		for (var k=0, len = this.overlays.length; k<len; k++) {
-			if (! this.overlays[k].isSelected) continue
-			this.drawFootprintSelected(ctx, xyviews[k])
-
+			if (this.overlays[k].isSelected) this.drawFootprintSelected(ctx, xyviews[k])
 		}
 		ctx.stroke()
 
@@ -211,21 +209,16 @@ class Overlay {
 			}
 		}
 
-		if (show) {
-			ctx.moveTo(xyviewArray[0].vx, xyviewArray[0].vy)
-			for (var k=1, len=xyviewArray.length; k<len; k++) {
-				ctx.lineTo(xyviewArray[k].vx, xyviewArray[k].vy)
-			}
-		}
+		if (show) this.drawFootprintSelected(ctx,xyviewArray)
 
 		return xyviewArray
 	}
 
-	drawFootprintSelected(ctx, xyview) {
-		if (!xyview) return
-		ctx.moveTo(xyview[0].vx, xyview[0].vy)
-		for (var k=1, len=xyview.length; k<len; k++) {
-			ctx.lineTo(xyview[k].vx, xyview[k].vy)
+	drawFootprintSelected(ctx, xyviews) {
+		if (!xyviews) return
+		ctx.moveTo(xyviews[0].vx, xyviews[0].vy)
+		for (let k=1, len=xyviews.length; k<len; k++) {
+			ctx.lineTo(xyviews[k].vx, xyviews[k].vy)
 		}
 	}
 
