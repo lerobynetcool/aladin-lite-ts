@@ -262,83 +262,83 @@ let listHipsProperties = [] // this variable stores our current knowledge
 let RETRIEVAL_TIMESTAMP_KEY = '_timestamp_retrieved'
 let LAST_URL_KEY = '_last_used_url' // URL previousy used to retrieve data from this HiPS
 
-let MOCSERVER_MIRRORS_HTTP = ['http://alasky.u-strasbg.fr/MocServer/query', 'http://alaskybis.u-strasbg.fr/MocServer/query']; // list of base URL for MocServer mirrors, available in HTTP
-let MOCSERVER_MIRRORS_HTTPS = ['https://alasky.u-strasbg.fr/MocServer/query', 'https://alaskybis.unistra.fr/MocServer/query']; // list of base URL for MocServer mirrors, available in HTTPS
+let MOCSERVER_MIRRORS_HTTP = ['http://alasky.u-strasbg.fr/MocServer/query', 'http://alaskybis.u-strasbg.fr/MocServer/query'] // list of base URL for MocServer mirrors, available in HTTP
+let MOCSERVER_MIRRORS_HTTPS = ['https://alasky.u-strasbg.fr/MocServer/query', 'https://alaskybis.unistra.fr/MocServer/query'] // list of base URL for MocServer mirrors, available in HTTPS
 
 // complement the baseList with the items in newList
 function merge(baseList, newList) {
-	var updatedList = [];
-	var newListById = {};
-	for (var k=0; k<newList.length; k++) {
-		var item = newList[k];
-		newListById[item.ID] = item;
+	let updatedList = []
+	let newListById = {}
+	for (let k=0; k<newList.length; k++) {
+		let item = newList[k]
+		newListById[item.ID] = item
 	}
 
-	for (var k=0; k<baseList.length; k++) {
-		var item = baseList[k];
-		var id = item.ID;
+	for (let k=0; k<baseList.length; k++) {
+		let item = baseList[k]
+		let id = item.ID
 		if (newListById.hasOwnProperty(id)) {
-			var itemToAdd = newListById[id];
+			let itemToAdd = newListById[id]
 			// we keep the last used URL property
 			if (item.hasOwnProperty(LAST_URL_KEY) && ! itemToAdd.hasOwnProperty(LAST_URL_KEY)) {
-				itemToAdd[LAST_URL_KEY] = item[LAST_URL_KEY];
+				itemToAdd[LAST_URL_KEY] = item[LAST_URL_KEY]
 			}
-			updatedList.push(itemToAdd);
+			updatedList.push(itemToAdd)
 		}
 		else {
-			updatedList.push(item);
+			updatedList.push(item)
 		}
 	}
-	return updatedList;
+	return updatedList
 }
 
 class HiPSDefinition {
 
 	// constructor
 	constructor(properties) {
-		this.properties = properties; // key-value object corresponding to the properties file
+		this.properties = properties // key-value object corresponding to the properties file
 
-		this.id = this.getID();
-		this.obsTitle = properties['obs_title'];
-		this.frame = properties['hips_frame'];
-		this.order = parseInt(properties['hips_order']);
-		this.clientSortKey = properties['client_sort_key'];
-		this.tileFormats = properties.hasOwnProperty('hips_tile_format') && properties['hips_tile_format'].split(' ');
-		this.urls = [];
-		this.urls.push(properties['hips_service_url']);
-		var k = 1;
+		this.id = this.getID()
+		this.obsTitle = properties['obs_title']
+		this.frame = properties['hips_frame']
+		this.order = parseInt(properties['hips_order'])
+		this.clientSortKey = properties['client_sort_key']
+		this.tileFormats = properties.hasOwnProperty('hips_tile_format') && properties['hips_tile_format'].split(' ')
+		this.urls = []
+		this.urls.push(properties['hips_service_url'])
+		let k = 1
 		while (properties.hasOwnProperty('hips_service_url_' + k)) {
-			this.urls.push(properties['hips_service_url_' + k]);
-			k++;
+			this.urls.push(properties['hips_service_url_' + k])
+			k++
 		}
 
-		this.clientApplications = properties['client_application'];
+		this.clientApplications = properties['client_application']
 	}
 
 	getServiceURLs(httpsOnly) {
-		httpsOnly = httpsOnly === true;
+		httpsOnly = httpsOnly === true
 		// TODO: TO BE COMPLETED
 	}
 
 	// return the ID according to the properties
 	getID() {
 		// ID is explicitely given
-		if (this.properties.hasOwnProperty('ID')) return this.properties['ID'];
+		if (this.properties.hasOwnProperty('ID')) return this.properties['ID']
 
-		var id = null;
+		let id = null
 		// ID might be built from different fields
-		if (this.properties.hasOwnProperty('creator_did'))               id = this.properties['creator_did'];
-		if (id==null && this.properties.hasOwnProperty('publisher_did')) id = this.properties['publisher_did'];
+		if (this.properties.hasOwnProperty('creator_did'))               id = this.properties['creator_did']
+		if (id==null && this.properties.hasOwnProperty('publisher_did')) id = this.properties['publisher_did']
 
 		if (id != null) {
 			// remove ivo:// prefix
-			if (id.slice(0, 6) === 'ivo://') id = id.slice(6);
+			if (id.slice(0, 6) === 'ivo://') id = id.slice(6)
 
 			// '?' are replaced by '/'
 			id = id.replace(/\?/g, '/')
 		}
 
-		return id;
+		return id
 	}
 
 	static LOCAL_STORAGE_KEY = 'aladin:hips-list'
@@ -347,12 +347,12 @@ class HiPSDefinition {
 	// @return an array with the HiPS definitions, empty array if nothing found or if an error occured
 	static getLocalStorageDefinitions() {
 		try {
-			var defs = window.localStorage.getItem(HiPSDefinition.LOCAL_STORAGE_KEY);
-			return defs === null ? [] : window.JSON.parse(defs);
+			let defs = window.localStorage.getItem(HiPSDefinition.LOCAL_STORAGE_KEY)
+			return defs === null ? [] : window.JSON.parse(defs)
 		}
 		catch(e) {
 			// silently fail and return empty array
-			return [];
+			return []
 		}
 	}
 
@@ -360,125 +360,125 @@ class HiPSDefinition {
 	// @return true if storage was successful
 	static storeInLocalStorage(properties) {
 		try {
-			window.localStorage.setItem(HiPSDefinition.LOCAL_STORAGE_KEY, window.JSON.stringify(properties));
+			window.localStorage.setItem(HiPSDefinition.LOCAL_STORAGE_KEY, window.JSON.stringify(properties))
 		}
 		catch(e) {
 			// silently fail and return false
-			return false;
+			return false
 		}
-		return true;
+		return true
 	}
 
 	// get HiPS definitions, by querying the MocServer
 	// return data as dict-like objects
 	static getRemoteDefinitions(params, successCallbackFn, failureCallbackFn) {
-		var params = params || {client_application: 'AladinLite'}; // by default, retrieve only HiPS tagged "Aladin Lite"
+		let params = params || {client_application: 'AladinLite'} // by default, retrieve only HiPS tagged "Aladin Lite"
 
-		params['fmt'] = 'json';
-		params['fields'] = 'ID,obs_title,client_sort_key,client_application,hips_service_url*,hips_order,hips_tile_format,hips_frame';
+		params['fmt'] = 'json'
+		params['fields'] = 'ID,obs_title,client_sort_key,client_application,hips_service_url*,hips_order,hips_tile_format,hips_frame'
 
-		var urls = Utils.isHttpsContext() ? MOCSERVER_MIRRORS_HTTPS : MOCSERVER_MIRRORS_HTTP;
+		let urls = Utils.isHttpsContext() ? MOCSERVER_MIRRORS_HTTPS : MOCSERVER_MIRRORS_HTTP
 
-		var successCallback = function(data) {
-			(typeof successCallbackFn === 'function') && successCallbackFn(data);
-		};
-		var failureCallback = function() {
-			console.error('Could not load HiPS definitions from urls ' + urls);
-			(typeof failureCallbackFn === 'function') && failureCallbackFn();
-		};
+		let successCallback = function(data) {
+			(typeof successCallbackFn === 'function') && successCallbackFn(data)
+		}
+		let failureCallback = function() {
+			console.error('Could not load HiPS definitions from urls ' + urls)
+			(typeof failureCallbackFn === 'function') && failureCallbackFn()
+		}
 
-		Utils.loadFromMirrors(urls, {data: params, onSuccess: successCallback, onFailure: failureCallback, timeout: 5});
+		Utils.loadFromMirrors(urls, {data: params, onSuccess: successCallback, onFailure: failureCallback, timeout: 5})
 	}
 
-	static CACHE_RETENTION_TIME_SECONDS = 7 * 86400; // definitions can be kept 7 days
+	static CACHE_RETENTION_TIME_SECONDS = 7 * 86400 // definitions can be kept 7 days
 	static init() {
 		// first, merge local definitions at class level with definitions in local storage
-		listHipsProperties = AL_CACHE_CLASS_LEVEL;
+		listHipsProperties = AL_CACHE_CLASS_LEVEL
 
 		// second, remove old definitions (client != AladinLite and timestamp older than CACHE_RETENTION_TIME_SECONDS) and merge
-		var localDefs = HiPSDefinition.getLocalStorageDefinitions();
+		let localDefs = HiPSDefinition.getLocalStorageDefinitions()
 		// 2.1 remove old defs
-		var now = new Date().getTime();
-		var indicesToRemove = [];
-		for (var k=0; k<localDefs.length; k++) {
-			var def = localDefs[k];
+		let now = new Date().getTime()
+		let indicesToRemove = []
+		for (let k=0; k<localDefs.length; k++) {
+			let def = localDefs[k]
 			if (def.hasOwnProperty(RETRIEVAL_TIMESTAMP_KEY) && (now - def[RETRIEVAL_TIMESTAMP_KEY]) > 1000 * HiPSDefinition.CACHE_RETENTION_TIME_SECONDS) {
-				indicesToRemove.push(k);
+				indicesToRemove.push(k)
 			}
 		}
 		// we have to browse the array in reverse order in order not to mess up indices
-		for (var k = indicesToRemove.length - 1; k >= 0; k--) {
-			localDefs.splice(indicesToRemove[k],1);
+		for (let k = indicesToRemove.length - 1; k >= 0; k--) {
+			localDefs.splice(indicesToRemove[k],1)
 		}
 		// 2.2 merge
-		listHipsProperties = merge(listHipsProperties, localDefs);
+		listHipsProperties = merge(listHipsProperties, localDefs)
 
 		// third, retrieve remote definitions, merge and save
 		HiPSDefinition.getRemoteDefinitions({dataproduct_type: 'image', client_application: 'AladinLite'}, function(remoteDefs) {
 			// adding timestamp of retrieval
-			var now = new Date().getTime();
-			for (var k=0; k<remoteDefs.length; k++) {
-				remoteDefs[k][RETRIEVAL_TIMESTAMP_KEY] = now;
+			let now = new Date().getTime()
+			for (let k=0; k<remoteDefs.length; k++) {
+				remoteDefs[k][RETRIEVAL_TIMESTAMP_KEY] = now
 			}
-			listHipsProperties = merge(listHipsProperties, remoteDefs);
-			HiPSDefinition.storeInLocalStorage(listHipsProperties);
-		});
+			listHipsProperties = merge(listHipsProperties, remoteDefs)
+			HiPSDefinition.storeInLocalStorage(listHipsProperties)
+		})
 	}
 
 	// return list of HiPSDefinition objects, filtering out definitions whose client_application is not AladinLite
 	static getALDefaultHiPSDefinitions() {
 		// filter out definitions with client_application != 'AladinLite'
-		var ret = [];
-		for (var k=0; k<listHipsProperties.length; k++) {
-			var properties = listHipsProperties[k];
+		let ret = []
+		for (let k=0; k<listHipsProperties.length; k++) {
+			let properties = listHipsProperties[k]
 			if ( ! properties.hasOwnProperty('client_application') || properties['client_application'].indexOf('AladinLite')<0) {
-				continue;
+				continue
 			}
 
-			ret.push(new HiPSDefinition(properties));
+			ret.push(new HiPSDefinition(properties))
 		}
-		return ret;
+		return ret
 	}
 
 	// return list of known HiPSDefinition objects
 	static getDefinitions() {
-		var ret = [];
-		for (var k=0; k<listHipsProperties.length; k++) {
-			var properties = listHipsProperties[k];
-			ret.push(new HiPSDefinition(properties));
+		let ret = []
+		for (let k=0; k<listHipsProperties.length; k++) {
+			let properties = listHipsProperties[k]
+			ret.push(new HiPSDefinition(properties))
 		}
-		return ret;
+		return ret
 	}
 
 	// parse a HiPS properties and return a dict-like object with corresponding key-values
 	// return null if parsing failed
 	static parseHiPSProperties(propertiesStr) {
 		if (propertiesStr==null) {
-			return null;
+			return null
 		}
 
-		var propertiesDict = {};
+		let propertiesDict = {}
 		// remove CR characters
-		propertiesStr = propertiesStr.replace(/[\r]/g, '');
+		propertiesStr = propertiesStr.replace(/[\r]/g, '')
 		// split on LF
-		var lines = propertiesStr.split('\n');
-		for (var k=0; k<lines.length; k++)  {
-			var l = $.trim(lines[k]);
+		let lines = propertiesStr.split('\n')
+		for (let k=0; k<lines.length; k++)  {
+			let l = $.trim(lines[k])
 			// ignore comments lines
 			if (l.slice(0, 1)==='#') {
-				continue;
+				continue
 			}
-			var idx = l.indexOf('=');
+			let idx = l.indexOf('=')
 			if (idx<0) {
-				continue;
+				continue
 			}
-			var key = $.trim(l.slice(0, idx));
-			var value = $.trim(l.slice(idx+1));
+			let key = $.trim(l.slice(0, idx))
+			let value = $.trim(l.slice(idx+1))
 
-			propertiesDict[key] = value;
+			propertiesDict[key] = value
 		}
 
-		return propertiesDict;
+		return propertiesDict
 	}
 
 	// find a HiPSDefinition by id.
@@ -488,7 +488,7 @@ class HiPSDefinition {
 
 	static findByID(id, callback = ()=>{}) {
 		// look first locally
-		var candidates = findByIDLocal(id);
+		let candidates = findByIDLocal(id)
 		if (candidates.length>0) {
 			callback(candidates)
 			return
@@ -500,36 +500,36 @@ class HiPSDefinition {
 	// find a HiPSDefinition by id.
 	// search is done on the local knowledge of HiPSDefinitions
 	static findByIDLocal(id2search) {
-		var candidates = [];
-		for (var k=0; k<listHipsProperties.length; k++) {
-			var properties = listHipsProperties[k];
-			var id = properties['ID'];
+		let candidates = []
+		for (let k=0; k<listHipsProperties.length; k++) {
+			let properties = listHipsProperties[k]
+			let id = properties['ID']
 			if (id.match(id2search) != null ) {
-				candidates.push(new HiPSDefinition(properties));
+				candidates.push(new HiPSDefinition(properties))
 			}
 		}
-		return candidates;
+		return candidates
 	}
 
 	// find remotely a HiPSDefinition by ID
 	static findByIDRemote(id, callback) {
-		HiPSDefinition.findHiPSRemote({ID: '*' + id + '*'}, callback);
+		HiPSDefinition.findHiPSRemote({ID: '*' + id + '*'}, callback)
 	}
 
 	// search a HiPS according to some criteria
 	static findHiPSRemote(searchOptions, callback = ()=>{}) {
-		searchOptions = searchOptions || {};
+		searchOptions = searchOptions || {}
 		if (! searchOptions.hasOwnProperty('dataproduct_type')) {
-			searchOptions['dataproduct_type'] = 'image';
+			searchOptions['dataproduct_type'] = 'image'
 		}
 		HiPSDefinition.getRemoteDefinitions(searchOptions, function(candidates) {
-			var defs = [];
-			for (var k=0; k<candidates.length; k++) {
-				defs.push(new HiPSDefinition(candidates[k]));
+			let defs = []
+			for (let k=0; k<candidates.length; k++) {
+				defs.push(new HiPSDefinition(candidates[k]))
 			}
-			callback(defs);
-		});
-	};
+			callback(defs)
+		})
+	}
 
 	// Create a HiPSDefinition object from a URL
 	//
@@ -538,25 +538,26 @@ class HiPSDefinition {
 	//
 	// return a HiPSDefinition if successful, null if it failed
 	static fromURL(url, callback = ()=>{}) {
-		var hipsUrl, propertiesUrl;
+		let hipsUrl
+		let propertiesUrl
 		if (url.slice(-10) === 'properties') {
-			propertiesUrl = url;
-			hipsUrl = propertiesUrl.slice(0, -11);
+			propertiesUrl = url
+			hipsUrl = propertiesUrl.slice(0, -11)
 		}
 		else {
 			if (url.slice(-1) === '/') {
-				url = url.slice(0, -1);
+				url = url.slice(0, -1)
 			}
-			hipsUrl = url;
-			propertiesUrl = hipsUrl + '/properties';
+			hipsUrl = url
+			propertiesUrl = hipsUrl + '/properties'
 		}
 
-		var callbackWhenPropertiesLoaded = function(properties) {
+		let callbackWhenPropertiesLoaded = function(properties) {
 			// Sometimes, hips_service_url is missing. That can happen for instance Hipsgen does not set the hips_service_url keyword
 			// --> in that case, we add as an attribyte the URL that was given as input parameter
-			var hipsPropertiesDict = HiPSDefinition.parseHiPSProperties(properties);
+			let hipsPropertiesDict = HiPSDefinition.parseHiPSProperties(properties)
 			if (! hipsPropertiesDict.hasOwnProperty('hips_service_url')) {
-				hipsPropertiesDict['hips_service_url'] = hipsUrl;
+				hipsPropertiesDict['hips_service_url'] = hipsUrl
 			}
 			callback(new HiPSDefinition(hipsPropertiesDict))
 		}
