@@ -411,16 +411,10 @@ class HiPSDefinition {
 
 	// return list of HiPSDefinition objects, filtering out definitions whose client_application is not AladinLite
 	static getALDefaultHiPSDefinitions() {
-		// filter out definitions with client_application != 'AladinLite'
-		let ret = []
-		for (let k=0; k<listHipsProperties.length; k++) {
-			let properties = listHipsProperties[k]
-			if (!properties.hasOwnProperty('client_application') || properties['client_application'].indexOf('AladinLite')<0) {
-				continue
-			}
-			ret.push(new HiPSDefinition(properties))
-		}
-		return ret
+		return listHipsProperties
+			// filter out definitions with client_application != 'AladinLite'
+			.filter( propt => propt?.client_application?.indexOf('AladinLite')>=0 )
+			.map   ( propt => new HiPSDefinition(propt) )
 	}
 
 	// return list of known HiPSDefinition objects
