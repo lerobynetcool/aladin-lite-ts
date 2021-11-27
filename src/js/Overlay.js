@@ -28,10 +28,8 @@
  *
  *****************************************************************************/
 
-Overlay = (function() {
-   Overlay = function(options) {
-		options = options || {};
-
+class Overlay {
+	constructor(options = {}) {
 		this.type = 'overlay';
 
 		this.name = options.name || "overlay";
@@ -46,24 +44,23 @@ Overlay = (function() {
 		//this.hpxIdx.init();
 
 		this.isShowing = true;
-	};
-
+	}
 
 	// TODO : show/hide methods should be integrated in a parent class
-	Overlay.prototype.show = function() {
+	show() {
 		if (this.isShowing) return;
 		this.isShowing = true;
 		this.reportChange();
-	};
+	}
 
-	Overlay.prototype.hide = function() {
+	hide() {
 		if (! this.isShowing) return;
 		this.isShowing = false;
 		this.reportChange();
-	};
+	}
 
 	// return an array of Footprint from a STC-S string
-	Overlay.parseSTCS = function(stcs) {
+	static parseSTCS(stcs) {
 		var footprints = [];
 		var parts = stcs.match(/\S+/g);
 		var k = 0, len = parts.length;
@@ -109,18 +106,18 @@ Overlay = (function() {
 		}
 
 		return footprints;
-	};
+	}
 
 	// ajout d'un tableau d'overlays (= objets Footprint, Circle ou Polyline)
-	Overlay.prototype.addFootprints = function(overlaysToAdd) {
+	addFootprints(overlaysToAdd) {
 		for (var k=0, len=overlaysToAdd.length; k<len; k++) {
 			this.add(overlaysToAdd[k], false);
 		}
 		this.view.requestRedraw();
-	};
+	}
 
 	// TODO : item doit pouvoir prendre n'importe quoi en param (footprint, circle, polyline)
-	Overlay.prototype.add = function(item, requestRedraw) {
+	add(item, requestRedraw) {
 		requestRedraw = requestRedraw !== undefined ? requestRedraw : true;
 
 		if (item instanceof Footprint) this.overlays.push(item);
@@ -128,26 +125,23 @@ Overlay = (function() {
 		item.setOverlay(this);
 
 		if (requestRedraw) this.view.requestRedraw();
-	};
-
+	}
 
 	// return a footprint by index
-   Overlay.prototype.getFootprint = function(idx) {
+	getFootprint(idx) {
 		if (idx<this.footprints.length) return this.footprints[idx];
 		else                            return null;
-	};
+	}
 
-	Overlay.prototype.setView = function(view) {
-		this.view = view;
-	};
+	setView(view) { this.view = view }
 
-	Overlay.prototype.removeAll = function() {
+	removeAll() {
 		// TODO : RAZ de l'index
 		this.overlays = [];
 		this.overlay_items = [];
-	};
+	}
 
-	Overlay.prototype.draw = function(ctx, projection, frame, width, height, largestDim, zoomFactor) {
+	draw(ctx, projection, frame, width, height, largestDim, zoomFactor) {
 		if (!this.isShowing) return;
 
 		// simple drawing
@@ -178,9 +172,9 @@ Overlay = (function() {
 		for (var k=0; k<this.overlay_items.length; k++) {
 			this.overlay_items[k].draw(ctx, projection, frame, width, height, largestDim, zoomFactor);
 		}
-	};
+	}
 
-	Overlay.increaseBrightness = function(hex, percent){
+	static increaseBrightness(hex, percent){
 		// strip the leading # if it's there
 		hex = hex.replace(/^\s*#|\s*$/g, '');
 
@@ -195,10 +189,9 @@ Overlay = (function() {
 				((0|(1<<8) + r + (256 - r) * percent / 100).toString(16)).substr(1) +
 				((0|(1<<8) + g + (256 - g) * percent / 100).toString(16)).substr(1) +
 				((0|(1<<8) + b + (256 - b) * percent / 100).toString(16)).substr(1);
-	};
+	}
 
-
-	Overlay.prototype.drawFootprint = function(f, ctx, projection, frame, width, height, largestDim, zoomFactor) {
+	drawFootprint(f, ctx, projection, frame, width, height, largestDim, zoomFactor) {
 		if (! f.isShowing) return null;
 		var xyviewArray = [];
 		var show = false;
@@ -235,22 +228,17 @@ Overlay = (function() {
 		// end for
 
 		return xyviewArray;
+	}
 
-	};
-
-	Overlay.prototype.drawFootprintSelected = function(ctx, xyview) {
+	drawFootprintSelected(ctx, xyview) {
 		if (!xyview) return;
 		var xyviewArray = xyview;
 		ctx.moveTo(xyviewArray[0].vx, xyviewArray[0].vy);
 		for (var k=1, len=xyviewArray.length; k<len; k++) {
 			ctx.lineTo(xyviewArray[k].vx, xyviewArray[k].vy);
 		}
-	};
+	}
 
 	// callback function to be called when the status of one of the footprints has changed
-	Overlay.prototype.reportChange = function() {
-		this.view.requestRedraw();
-	};
-
-	return Overlay;
-})();
+	reportChange() { this.view.requestRedraw() }
+}
