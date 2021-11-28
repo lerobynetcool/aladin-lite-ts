@@ -417,23 +417,17 @@ class HiPSDefinition {
 		// remove CR characters
 		propertiesStr = propertiesStr.replace(/[\r]/g, '')
 		// split on LF
-		let lines = propertiesStr.split('\n')
-		for (let k=0; k<lines.length; k++)  {
-			let l = $.trim(lines[k])
+		propertiesStr.split('\n').forEach( line => {
+			let l = $.trim(line)
 			// ignore comments lines
-			if (l.slice(0, 1)==='#') {
-				continue
-			}
+			if (l.slice(0, 1)==='#') return
 			let idx = l.indexOf('=')
-			if (idx<0) {
-				continue
-			}
+			if (idx<0) return
 			let key = $.trim(l.slice(0, idx))
 			let value = $.trim(l.slice(idx+1))
 
 			propertiesDict[key] = value
-		}
-
+		})
 		return propertiesDict
 	}
 
