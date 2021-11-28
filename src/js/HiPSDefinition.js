@@ -418,13 +418,13 @@ class HiPSDefinition {
 		propertiesStr = propertiesStr.replace(/[\r]/g, '')
 		// split on LF
 		propertiesStr.split('\n').forEach( line => {
-			let l = $.trim(line)
+			let l = line.trim()
 			// ignore comments lines
 			if (l.slice(0, 1)==='#') return
 			let idx = l.indexOf('=')
 			if (idx<0) return
-			let key = $.trim(l.slice(0, idx))
-			let value = $.trim(l.slice(idx+1))
+			let key = (l.slice(0, idx)).trim()
+			let value = (l.slice(idx+1)).trim()
 
 			propertiesDict[key] = value
 		})
