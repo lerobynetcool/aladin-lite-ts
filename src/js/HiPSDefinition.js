@@ -448,15 +448,9 @@ class HiPSDefinition {
 	// find a HiPSDefinition by id.
 	// search is done on the local knowledge of HiPSDefinitions
 	static findByIDLocal(id2search) {
-		let candidates = []
-		for (let k=0; k<listHipsProperties.length; k++) {
-			let properties = listHipsProperties[k]
-			let id = properties['ID']
-			if (id.match(id2search) != null ) {
-				candidates.push(new HiPSDefinition(properties))
-			}
-		}
-		return candidates
+		return listHipsProperties
+			.filter( propt => propt.ID.match(id2search) != null )
+			.map   ( propt => new HiPSDefinition(propt) )
 	}
 
 	// find remotely a HiPSDefinition by ID
