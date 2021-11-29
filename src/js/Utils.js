@@ -167,9 +167,7 @@ class Utils {
 	*/
 	static loadFromMirrors(urls, options = {}) {
 		let data     = options?.data || null
-		let method   = options?.method || 'GET'
 		let dataType = options?.dataType || null
-		let timeout  = options?.timeout || 20
 
 		let onSuccess = options?.onSuccess || (()=>{})
 		let onFailure = options?.onFailure || (()=>{})
@@ -192,17 +190,8 @@ class Utils {
 
 	// return the jquery ajax object configured with the requested parameters
 	// by default, we use the proxy (safer, as we don't know if the remote server supports CORS)
-	static getAjaxObject(url, method, dataType, useProxy = true) {
-		let urlToRequest
-		if (useProxy===true) {
-			urlToRequest = Aladin.JSONP_PROXY + '?url=' + encodeURIComponent(url)
-		}
-		else {
-			urlToRequest = url
-		}
-		method = method || 'GET'
-		dataType = dataType || null
-
+	static getAjaxObject(url, method = 'GET', dataType = null, useProxy = true) {
+		let urlToRequest = useProxy ? `${Aladin.JSONP_PROXY}?url=${encodeURIComponent(url)}` : url
 		return $.ajax({
 			url: urlToRequest,
 			method: method,
