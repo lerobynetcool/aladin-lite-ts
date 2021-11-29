@@ -88,13 +88,10 @@ class AladinUtils {
 	 * @param viewW
 	 */
 	isHpxPixVisible(pixCorners, viewWidth, viewHeight) {
-		for (var i = 0; i<pixCorners.length; i++) {
-			if ( pixCorners[i].vx>=-20 && pixCorners[i].vx<(viewWidth+20) &&
-				 pixCorners[i].vy>=-20 && pixCorners[i].vy<(viewHeight+20) ) {
-				return true
-			}
-		}
-		return false
+		return pixCorners.find(pix =>
+			pix.vx>=-20 && pix.vx<(viewWidth +20) &&
+			pix.vy>=-20 && pix.vy<(viewHeight+20)
+		) !== undefined // true if found something, else false
 	}
 
 	// ipixToIpix(npixIn, norderIn, norderOut) {
