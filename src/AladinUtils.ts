@@ -25,7 +25,14 @@
  * Author: Thomas Boch[CDS]
  *
  *****************************************************************************/
-class AladinUtils {
+
+import { CooFrameEnum } from './CooFrameEnum'
+import { CooConversion } from './CooConversion'
+import { Projection } from './libs/astro/projection'
+
+import { TXY, Txy, Vxy } from './Basic'
+
+export class AladinUtils {
 
 	/*
 	 * passage de xy projection à xy dans la vue écran
@@ -36,7 +43,7 @@ class AladinUtils {
 	 * @param largestDim largest dimension of the view
 	 * @returns position in the view
 	 */
-	static xyToView(x, y, width, height, largestDim, zoomFactor, round = true) {
+	static xyToView(x: number, y: number, width: number, height: number, largestDim: number, zoomFactor: number, round = true):  Vxy {
 		let vx = largestDim/2*(1+zoomFactor*x)-(largestDim-width)/2
 		let vy = largestDim/2*(1+zoomFactor*y)-(largestDim-height)/2
 		// we round the result for potential performance gains
@@ -54,7 +61,7 @@ class AladinUtils {
 	 * @param zoomFactor
 	 * @returns position in xy projection
 	 */
-	static viewToXy(vx, vy, width, height, largestDim, zoomFactor) {
+	static viewToXy(vx: number, vy: number, width: number, height: number, largestDim: number, zoomFactor: number): Txy {
 		return {
 			x: ((2*vx+(largestDim-width ))/largestDim-1)/zoomFactor,
 			y: ((2*vy+(largestDim-height))/largestDim-1)/zoomFactor
@@ -65,7 +72,7 @@ class AladinUtils {
 	 * convert a
 	 * @returns position x,y in the view. Null if projection is impossible
 	 */
-	static radecToViewXy(ra, dec, currentProjection, currentFrame, width, height, largestDim, zoomFactor) {
+	static radecToViewXy(ra: number, dec: number, currentProjection: Projection, currentFrame: any, width: number, height: number, largestDim: number, zoomFactor: number) {
 		let xy
 		if (currentFrame.system != CooFrameEnum.SYSTEMS.J2000) {
 			let lonlat = CooConversion.J2000ToGalactic([ra, dec])
@@ -77,7 +84,7 @@ class AladinUtils {
 		return AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor, false)
 	}
 
-	static myRound(a) {
+	static myRound(a: number) {
 		if (a<0) return -((-a)|0)
 		else     return      a|0
 	}
@@ -87,26 +94,26 @@ class AladinUtils {
 	 * @param pixCorners array of position (xy view) of the corners of the pixel
 	 * @param viewW
 	 */
-	static isHpxPixVisible(pixCorners, viewWidth, viewHeight) {
+	static isHpxPixVisible(pixCorners: Vxy[], viewWidth: number, viewHeight: number) {
 		return pixCorners.find(pix =>
 			pix.vx>=-20 && pix.vx<(viewWidth +20) &&
 			pix.vy>=-20 && pix.vy<(viewHeight+20)
 		) !== undefined // true if found something, else false
 	}
 
-	// ipixToIpix(npixIn, norderIn, norderOut) {
-	// 	var npixOut = [];
+	// ipixToIpix(npixIn: number, norderIn: number, norderOut: number) {
+	// 	let npixOut = []
 	// 	if (norderIn>=norderOut) {
 	// 	}
 	// }
 
-	static getZoomFactorForAngle(angleInDegrees, projectionMethod) {
+	static getZoomFactorForAngle(angleInDegrees: number, projectionMethod: number) {
 		let p1 = {ra: 0, dec: 0}
 		let p2 = {ra: angleInDegrees, dec: 0}
 		let projection = new Projection(angleInDegrees/2, 0)
 		projection.setProjection(projectionMethod)
-		let p1Projected = projection.project(p1.ra, p1.dec)
-		let p2Projected = projection.project(p2.ra, p2.dec)
+		let p1Projected = projection.project(p1.ra, p1.dec) as TXY // TODO : could be null
+		let p2Projected = projection.project(p2.ra, p2.dec) as TXY // TODO : could be null
 
 		let zoomFactor = 1/Math.abs(p1Projected.X - p2Projected.Y)
 
@@ -114,7 +121,7 @@ class AladinUtils {
 	}
 
 	// grow array b of vx,vy view positions by *val* pixels
-	static grow2(b, val) {
+	static grow2(b: Vxy[], val: number) {
 		let j=0
 		for (let i=0; i<4; i++) {
 			if ( b[i]==null ) j++
@@ -122,7 +129,7 @@ class AladinUtils {
 
 		if( j>1 ) return b
 
-		let b1 = []
+		let b1: Vxy[] = []
 		for (let i=0; i<4; i++) {
 			b1.push( {vx: b[i].vx, vy: b[i].vy} )
 		}
@@ -183,5 +190,4 @@ class AladinUtils {
 		MOC: '<svg xmlns="http://www.w3.org/2000/svg"><polyline points="0.5,7,2.5,7,2.5,5,7,5,7,3,10,3,10,5,13,5,13,7,15,7,15,9,13,9,13,12,10,12,10,14,7,14,7,12,2.5,12,2.5,10,0.5,10,0.5,7" stroke-width="1" stroke="FILLCOLOR" fill="transparent" /><line x1="1" y1="10" x2="6" y2="5" stroke="FILLCOLOR" stroke-width="0.5" /><line x1="2" y1="12" x2="10" y2="4" stroke="FILLCOLOR" stroke-width="0.5" /><line x1="5" y1="12" x2="12" y2="5" stroke="FILLCOLOR" stroke-width="0.5" /><line x1="7" y1="13" x2="13" y2="7" stroke="FILLCOLOR" stroke-width="0.5" /><line x1="10" y1="13" x2="13" y2="10" stroke="FILLCOLOR" stroke-width="0.5" /></svg>',
 		OVERLAY: '<svg xmlns="http://www.w3.org/2000/svg"><polygon points="10,5,10,1,14,1,14,14,2,14,2,9,6,9,6,5" fill="transparent" stroke="FILLCOLOR" stroke-width="2"/></svg>'
 	}
-
 }
