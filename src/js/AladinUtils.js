@@ -92,11 +92,11 @@ class AladinUtils {
 		return false;
 	}
 
-	ipixToIpix(npixIn, norderIn, norderOut) {
-		var npixOut = [];
-		if (norderIn>=norderOut) {
-		}
-	}
+	// ipixToIpix(npixIn, norderIn, norderOut) {
+	// 	var npixOut = [];
+	// 	if (norderIn>=norderOut) {
+	// 	}
+	// }
 
 	getZoomFactorForAngle(angleInDegrees, projectionMethod) {
 		var p1 = {ra: 0, dec: 0};
