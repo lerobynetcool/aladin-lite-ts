@@ -436,13 +436,13 @@ class HiPSDefinition {
 
 	static findByID(id, callback = ()=>{}) {
 		// look first locally
-		let candidates = findByIDLocal(id)
+		let candidates = HiPSDefinition.findByIDLocal(id)
 		if (candidates.length>0) {
 			callback(candidates)
 			return
 		}
 		// then remotely
-		findByIDRemote(id, callback)
+		HiPSDefinition.findByIDRemote(id, callback)
 	}
 
 	// find a HiPSDefinition by id.
