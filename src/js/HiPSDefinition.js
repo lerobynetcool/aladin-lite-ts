@@ -414,20 +414,18 @@ class HiPSDefinition {
 		if (propertiesStr==null) return null
 
 		let propertiesDict = {}
-		// remove CR characters
-		propertiesStr = propertiesStr.replace(/[\r]/g, '')
-		// split on LF
-		propertiesStr.split('\n').forEach( line => {
-			let l = line.trim()
-			// ignore comments lines
-			if (l.slice(0, 1)==='#') return
-			let idx = l.indexOf('=')
-			if (idx<0) return
-			let key = (l.slice(0, idx)).trim()
-			let value = (l.slice(idx+1)).trim()
-
-			propertiesDict[key] = value
-		})
+		propertiesStr
+			.replace(/[\r]/g, '')    // remove CR characters
+			.split('\n')             // split on LF
+			.map(l => l.trim() )     // remove whitespace at start and end
+			.filter(l => l[0]!='#')  // ignore comments lines
+			.forEach( line => {
+				let idx = line.indexOf('=')
+				if (idx<0) return
+				let key = (line.slice(0, idx)).trim()
+				let value = (line.slice(idx+1)).trim()
+				propertiesDict[key] = value
+			})
 		return propertiesDict
 	}
 
