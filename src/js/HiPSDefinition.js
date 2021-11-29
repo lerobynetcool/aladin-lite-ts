@@ -486,14 +486,14 @@ class HiPSDefinition {
 				url = url.slice(0, -1)
 			}
 			hipsUrl = url
-			propertiesUrl = hipsUrl + '/properties'
+			propertiesUrl = `${hipsUrl}/properties`
 		}
 
 		let callbackWhenPropertiesLoaded = function(properties) {
 			// Sometimes, hips_service_url is missing. That can happen for instance Hipsgen does not set the hips_service_url keyword
 			// --> in that case, we add as an attribyte the URL that was given as input parameter
 			let hipsPropertiesDict = HiPSDefinition.parseHiPSProperties(properties)
-			if (! hipsPropertiesDict.hasOwnProperty('hips_service_url')) {
+			if (!hipsPropertiesDict.hasOwnProperty('hips_service_url')) {
 				hipsPropertiesDict['hips_service_url'] = hipsUrl
 			}
 			callback(new HiPSDefinition(hipsPropertiesDict))
@@ -511,9 +511,7 @@ class HiPSDefinition {
 	}
 
 	// HiPSDefinition generation from a properties dict-like object
-	static fromProperties(properties) {
-		return new HiPSDefinition(properties)
-	}
+	static fromProperties(properties) { return new HiPSDefinition(properties) }
 
 }
 
