@@ -172,7 +172,7 @@ class Utils {
 	// generate an absolute URL from a relative URL
 	// example: getAbsoluteURL('foo/bar/toto') return http://cds.unistra.fr/AL/foo/bar/toto if executed from page http://cds.unistra.fr/AL/
 	static getAbsoluteURL(url) {
-		var a = document.createElement('a')
+		let a = document.createElement('a')
 		a.href = url
 		return a.href
 	}
@@ -180,7 +180,7 @@ class Utils {
 	// generate a valid v4 UUID
 	static uuidv4() {
 		return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-			var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8)
+			let r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8)
 			return v.toString(16)
 		})
 	}
