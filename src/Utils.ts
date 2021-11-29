@@ -19,75 +19,68 @@
 
 /******************************************************************************
  * Aladin Lite project
- *
+ * 
  * File Utils
- *
+ * 
  * Author: Thomas Boch[CDS]
- *
+ * 
  *****************************************************************************/
 
-// TODO : utiliser le LRU cache pour les tuiles images
-Utils.LRUCache = class {
-	content = {}
+import {Aladin} from './Aladin'
 
+// $ = $ || jQuery
+
+// TODO : utiliser le LRU cache pour les tuiles images
+class LRUCache<T> {
+	content: { [name: string]: [T,number] } = {}
+	maxsize
 	constructor(maxsize=1024) { this.maxsize = maxsize }
-	set(key, value) {
-		this.content[key] = [ value, Date.now() ]
+	set(key: string, value: T) {
+		this.content[key] = [value,Date.now()]
 		// remove oldest element when no more room
 		let keys = this.keys()
 		if(keys.length > this.maxsize) {
-			let oldest_k = keys.pop()
+			let oldest_k = keys.pop() as string
 			keys.forEach( k => oldest_k = this.content[k][1] < this.content[oldest_k][1] ? k : oldest_k )
 			delete this.content[oldest_k]
 		}
 	}
-	get(key) {
+	get(key: string) {
 		this.content[key][1] = Date.now()
 		return this.content[key][0]
 	}
-	keys() { return Object.keys(this.content) }
+	keys(): string[] { return Object.keys(this.content) }
 }
 
-// adding relMouseCoords to HTMLCanvasElement prototype (see http://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element )
-function relMouseCoords(event) {
-	if (event.offsetX) {
-		return {x: event.offsetX, y:event.offsetY}
-	}
+export function relMouseCoords(self: HTMLCanvasElement, event: MouseEvent) {
+	if (event.offsetX) return {x: event.offsetX, y:event.offsetY}
 	else {
-		let e = event
+ 		let e = event
 		// http://www.jacklmoore.com/notes/mouse-position/
-		let target = e.target || e.srcElement
-		let style = target.currentStyle || window.getComputedStyle(target, null)
+		let target = (e.target || e.srcElement) as EventTarget // assume cannot be null
+		let style = (target as any).currentStyle || window.getComputedStyle(target as any, null)
 		let borderLeftWidth = parseInt(style['borderLeftWidth'], 10)
 		let borderTopWidth = parseInt(style['borderTopWidth'], 10)
-		let rect = target.getBoundingClientRect()
+		let rect = (target as any).getBoundingClientRect()
 
 		let clientX = e.clientX
 		let clientY = e.clientY
 		if (e.clientX == undefined) {
-			clientX = e.originalEvent.changedTouches[0].clientX
-			clientY = e.originalEvent.changedTouches[0].clientY
+			clientX = (e as any).originalEvent.changedTouches[0].clientX
+			clientY = (e as any).originalEvent.changedTouches[0].clientY
 		}
 
 		let offsetX = clientX - borderLeftWidth - rect.left
 		let offsetY = clientY - borderTopWidth - rect.top
 
-		return {x: parseInt(offsetX/Utils.cssScale), y: parseInt(offsetY/Utils.cssScale)}
+		return {x: Math.floor(offsetX/Utils.cssScale), y: Math.floor(offsetY/Utils.cssScale)}
 	}
 }
-HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords
 
-$ = $ || jQuery
-
-/* source : http://stackoverflow.com/a/8764051 */
-$.urlParam = function(name, queryString = location.search){
-	return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(queryString)||[,""])[1].replace(/\+/g, '%20'))||null
-}
-
-class Utils {
-	static __cssScale = undefined
+export class Utils {
+	static __cssScale: number|undefined = undefined
 	// TODO : this sounds hackish and not clean
-	static get cssScale() {
+	static get cssScale(): number {
 		if(Utils.__cssScale === undefined) {
 			let st = window.getComputedStyle(document.body, null)
 			let tr = st.getPropertyValue("transform") ||
@@ -104,14 +97,16 @@ class Utils {
 	}
 	static set cssScale(v) { Utils.__cssScale = v }
 
+	static LRUCache = LRUCache
+
 	/* source: http://stackoverflow.com/a/1830844 */
-	static isNumber(n) { return !isNaN(parseFloat(n)) && isFinite(n) }
+	static isNumber(n: any) { return !isNaN(parseFloat(n)) && isFinite(n) }
 
-	static isInt(n) { return Utils.isNumber(n) && Math.floor(n)==n }
-
+	static isInt(n: any) { return Utils.isNumber(n) && Math.floor(n)==n }
+	
 	/* a debounce function, used to prevent multiple calls to the same function if less than delay milliseconds have passed */
-	static debounce(fn, delay) {
-		let timer = null
+	static debounce(fn: Function, delay: number) {
+		let timer: NodeJS.Timeout
 		return () => {
 			let context = this
 			let args = arguments
@@ -121,9 +116,9 @@ class Utils {
 	}
 
 	/* return a throttled function, to rate limit the number of calls (by default, one call every 250 milliseconds) */
-	static throttle(fn, threshhold = 250, scope) {
-		let last
-		let deferTimer
+	static throttle(fn: Function, threshhold = 250, scope?: any) {
+		let last: number
+		let deferTimer: NodeJS.Timeout
 		return () => {
 			let context = scope || this
 
@@ -143,14 +138,14 @@ class Utils {
 		}
 	}
 
-	/**
+	/*
 	 * Make an AJAX call, given a list of potential mirrors
 	 * First successful call will result in options.onSuccess being called back
 	 * If all calls fail, onFailure is called back at the end
 	 * 
 	 * This method assumes the URL are CORS-compatible, no proxy will be used
 	 */
-	static loadFromMirrors(urls, options = {}) {
+	static loadFromMirrors(urls: string[], options: any) {
 		let data     = options?.data || null
 		let dataType = options?.dataType || null
 
@@ -159,9 +154,9 @@ class Utils {
 
 		if (urls.length === 0) onFailure()
 		else {
-			let ajaxOptions = {
+			let ajaxOptions: any = {
 				url: urls[0],
-				data: data
+				data: data,
 			}
 			if (dataType) {
 				ajaxOptions.dataType = dataType
@@ -170,11 +165,11 @@ class Utils {
 				.done( (data) => onSuccess(data) )
 				.fail( () => Utils.loadFromMirrors(urls.slice(1), options) )
 		}
-	}
+	} 
 
 	// return the jquery ajax object configured with the requested parameters
 	// by default, we use the proxy (safer, as we don't know if the remote server supports CORS)
-	static getAjaxObject(url, method = 'GET', dataType = null, useProxy = true) {
+	static getAjaxObject(url: string, method = 'GET', dataType?: string, useProxy = true) {
 		let urlToRequest = useProxy ? `${Aladin.JSONP_PROXY}?url=${encodeURIComponent(url)}` : url
 		return $.ajax({
 			url: urlToRequest,
@@ -189,7 +184,7 @@ class Utils {
 
 	// generate an absolute URL from a relative URL
 	// example: getAbsoluteURL('foo/bar/toto') return http://cds.unistra.fr/AL/foo/bar/toto if executed from page http://cds.unistra.fr/AL/
-	static getAbsoluteURL(url) {
+	static getAbsoluteURL(url: string) {
 		let a = document.createElement('a')
 		a.href = url
 		return a.href
