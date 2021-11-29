@@ -121,16 +121,6 @@ class Utils {
 		}
 	}
 
-	/* A LRU cache, inspired by https://gist.github.com/devinus/409353#file-gistfile1-js */
-	// TODO : utiliser le LRU cache pour les tuiles images
-	static LRUCache(maxsize) {
-		this._keys = []
-		this._items = {}
-		this._expires = {}
-		this._size = 0
-		this._maxsize = maxsize || 1024
-	}
-
 	////////////////////////////////////////////////////////////////////////////:
 	/**
 	 Make an AJAX call, given a list of potential mirrors
@@ -197,6 +187,16 @@ class Utils {
 }
 
 Utils.LRUCache = class {
+	/* A LRU cache, inspired by https://gist.github.com/devinus/409353#file-gistfile1-js */
+	// TODO : utiliser le LRU cache pour les tuiles images
+	constructor(maxsize) {
+		this._keys = []
+		this._items = {}
+		this._expires = {}
+		this._size = 0
+		this._maxsize = maxsize || 1024
+	}
+
 	set(key, value) {
 		let keys    = this._keys
 		let items   = this._items
