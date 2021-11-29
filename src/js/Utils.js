@@ -71,32 +71,6 @@ function relMouseCoords(event) {
 }
 HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords
 
-//Function.prototype.bind polyfill from
-//https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function/bind
-if (!Function.prototype.bind) {
-	Function.prototype.bind = function (obj) {
-		// closest thing possible to the ECMAScript 5 internal IsCallable function
-		if (typeof this !== 'function') {
-			throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
-		}
-
-		let slice = [].slice
-		let args = slice.call(arguments, 1)
-		let self = this
-		let nop = ()=>{}
-		let bound = function () {
-			return self.apply(
-				this instanceof nop ? this : (obj || {}),
-				args.concat(slice.call(arguments))
-			)
-		}
-
-		bound.prototype = this.prototype
-
-		return bound
-	}
-}
-
 $ = $ || jQuery
 
 /* source : http://stackoverflow.com/a/8764051 */
