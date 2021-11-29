@@ -55,7 +55,10 @@ class AladinUtils {
 	 * @returns position in xy projection
 	 */
 	static viewToXy(vx, vy, width, height, largestDim, zoomFactor) {
-		return {x: ((2*vx+(largestDim-width))/largestDim-1)/zoomFactor, y: ((2*vy+(largestDim-height))/largestDim-1)/zoomFactor};
+		return {
+			x: ((2*vx+(largestDim-width ))/largestDim-1)/zoomFactor,
+			y: ((2*vy+(largestDim-height))/largestDim-1)/zoomFactor
+		}
 	}
 
 	/*
@@ -63,20 +66,20 @@ class AladinUtils {
 	 * @returns position x,y in the view. Null if projection is impossible
 	 */
 	static radecToViewXy(ra, dec, currentProjection, currentFrame, width, height, largestDim, zoomFactor) {
-		var xy;
+		let xy
 		if (currentFrame.system != CooFrameEnum.SYSTEMS.J2000) {
-			var lonlat = CooConversion.J2000ToGalactic([ra, dec]);
-			xy = currentProjection.project(lonlat[0], lonlat[1]);
+			let lonlat = CooConversion.J2000ToGalactic([ra, dec])
+			xy = currentProjection.project(lonlat[0], lonlat[1])
 		}
-		else xy = currentProjection.project(ra, dec);
-		if (!xy) return null;
+		else xy = currentProjection.project(ra, dec)
+		if (!xy) return null
 
-		return AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor, false);
+		return AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor, false)
 	}
 
 	myRound(a) {
-		if (a<0) return -1*( (-a) | 0);
-		else     return         a | 0;
+		if (a<0) return -1*( (-a) | 0)
+		else     return         a | 0
 	}
 
 	/*
@@ -88,10 +91,10 @@ class AladinUtils {
 		for (var i = 0; i<pixCorners.length; i++) {
 			if ( pixCorners[i].vx>=-20 && pixCorners[i].vx<(viewWidth+20) &&
 				 pixCorners[i].vy>=-20 && pixCorners[i].vy<(viewHeight+20) ) {
-				return true;
+				return true
 			}
 		}
-		return false;
+		return false
 	}
 
 	// ipixToIpix(npixIn, norderIn, norderOut) {
@@ -101,73 +104,75 @@ class AladinUtils {
 	// }
 
 	getZoomFactorForAngle(angleInDegrees, projectionMethod) {
-		var p1 = {ra: 0, dec: 0};
-		var p2 = {ra: angleInDegrees, dec: 0};
-		var projection = new Projection(angleInDegrees/2, 0);
-		projection.setProjection(projectionMethod);
-		var p1Projected = projection.project(p1.ra, p1.dec);
-		var p2Projected = projection.project(p2.ra, p2.dec);
+		let p1 = {ra: 0, dec: 0}
+		let p2 = {ra: angleInDegrees, dec: 0}
+		let projection = new Projection(angleInDegrees/2, 0)
+		projection.setProjection(projectionMethod)
+		let p1Projected = projection.project(p1.ra, p1.dec)
+		let p2Projected = projection.project(p2.ra, p2.dec)
 
-		var zoomFactor = 1/Math.abs(p1Projected.X - p2Projected.Y);
+		let zoomFactor = 1/Math.abs(p1Projected.X - p2Projected.Y)
 
-		return zoomFactor;
+		return zoomFactor
 	}
 
 	// grow array b of vx,vy view positions by *val* pixels
 	grow2(b, val) {
-		var j=0;
-		for ( var i=0; i<4; i++ ) {
-			if ( b[i]==null ) j++;
+		let j=0
+		for (let i=0; i<4; i++) {
+			if ( b[i]==null ) j++
 		}
 
-		if( j>1 ) return b;
+		if( j>1 ) return b
 
-		var b1 = [];
-		for ( var i=0; i<4; i++ ) {
-			b1.push( {vx: b[i].vx, vy: b[i].vy} );
+		let b1 = []
+		for (let i=0; i<4; i++) {
+			b1.push( {vx: b[i].vx, vy: b[i].vy} )
 		}
 
-		for ( var i=0; i<2; i++ ) {
-			var a = i==1 ? 1 : 0;
-			var c = i==1 ? 3 : 2;
+		for (let i=0; i<2; i++) {
+			let a = i==1 ? 1 : 0
+			let c = i==1 ? 3 : 2
 
 			if ( b1[a]==null ) {
-				var d,g;
+				let d
+				let g
 				if ( a==0 || a==3 ) {
-					d=1;
-					g=2;
+					d=1
+					g=2
 				}
 				else {
-					d=0;
-					g=3;
+					d=0
+					g=3
 				}
-				b1[a] = {vx: (b1[d].vx+b1[g].vx)/2, vy: (b1[d].vy+b1[g].vy)/2};
+				b1[a] = {vx: (b1[d].vx+b1[g].vx)/2, vy: (b1[d].vy+b1[g].vy)/2}
 			}
 			if ( b1[c]==null ) {
-				var d,g;
+				let d
+				let g
 				if ( c==0 || c==3 ) {
-					d=1;
-					g=2;
+					d=1
+					g=2
 				}
 				else {
-					d=0;
-					g=3;
+					d=0
+					g=3
 				}
-				b1[c] = {vx: (b1[d].vx+b1[g].vx)/2, vy: (b1[d].vy+b1[g].vy)/2};
+				b1[c] = {vx: (b1[d].vx+b1[g].vx)/2, vy: (b1[d].vy+b1[g].vy)/2}
 			}
 			if( b1[a]==null || b1[c]==null ) {
-				continue;
+				continue
 			}
 
-			var angle = Math.atan2(b1[c].vy-b1[a].vy, b1[c].vx-b1[a].vx);
-			var chouilla = val*Math.cos(angle);
-			b1[a].vx -= chouilla;
-			b1[c].vx += chouilla;
-			chouilla = val*Math.sin(angle);
-			b1[a].vy-=chouilla;
-			b1[c].vy+=chouilla;
+			let angle = Math.atan2(b1[c].vy-b1[a].vy, b1[c].vx-b1[a].vx)
+			let chouilla = val*Math.cos(angle)
+			b1[a].vx -= chouilla
+			b1[c].vx += chouilla
+			chouilla = val*Math.sin(angle)
+			b1[a].vy-=chouilla
+			b1[c].vy+=chouilla
 		}
-		return b1;
+		return b1
 	}
 
 	// SVG icons templates are stored here rather than in a CSS, as to allow
