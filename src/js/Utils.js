@@ -26,6 +26,28 @@
  *
  *****************************************************************************/
 
+// TODO : utiliser le LRU cache pour les tuiles images
+Utils.LRUCache = class {
+	content = {}
+
+	constructor(maxsize=1024) { this.maxsize = maxsize }
+	set(key, value) {
+		this.content[key] = [ value, Date.now() ]
+		// remove oldest element when no more room
+		let keys = this.keys()
+		if(keys.length > this.maxsize) {
+			let oldest_k = keys.pop()
+			keys.forEach( k => oldest_k = this.content[k][1] < this.content[oldest_k][1] ? k : oldest_k )
+			delete this.content[oldest_k]
+		}
+	}
+	get(key) {
+		this.content[key][1] = Date.now()
+		return this.content[key][0]
+	}
+	keys() { return Object.keys(this.content) }
+}
+
 // adding relMouseCoords to HTMLCanvasElement prototype (see http://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element )
 function relMouseCoords(event) {
 	if (event.offsetX) {
@@ -89,7 +111,7 @@ class Utils {
 	/* a debounce function, used to prevent multiple calls to the same function if less than delay milliseconds have passed */
 	static debounce(fn, delay) {
 		let timer = null
-		return function () {
+		return () => {
 			let context = this
 			let args = arguments
 			clearTimeout(timer)
@@ -101,7 +123,7 @@ class Utils {
 	static throttle(fn, threshhold = 250, scope) {
 		let last
 		let deferTimer
-		return function() {
+		return () => {
 			let context = scope || this
 
 			let now = +new Date
@@ -120,14 +142,13 @@ class Utils {
 		}
 	}
 
-	////////////////////////////////////////////////////////////////////////////:
 	/**
-	 Make an AJAX call, given a list of potential mirrors
-	First successful call will result in options.onSuccess being called back
-	If all calls fail, onFailure is called back at the end
-
-	This method assumes the URL are CORS-compatible, no proxy will be used
-	*/
+	 * Make an AJAX call, given a list of potential mirrors
+	 * First successful call will result in options.onSuccess being called back
+	 * If all calls fail, onFailure is called back at the end
+	 * 
+	 * This method assumes the URL are CORS-compatible, no proxy will be used
+	 */
 	static loadFromMirrors(urls, options = {}) {
 		let data     = options?.data || null
 		let dataType = options?.dataType || null
@@ -175,31 +196,9 @@ class Utils {
 
 	// generate a valid v4 UUID
 	static uuidv4() {
-		return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+		return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
 			let r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8)
 			return v.toString(16)
 		})
 	}
-}
-
-// TODO : utiliser le LRU cache pour les tuiles images
-Utils.LRUCache = class {
-	content = {}
-
-	constructor(maxsize=1024) { this.maxsize = maxsize }
-	set(key, value) {
-		this.content[key] = [ value, Date.now() ]
-		// remove oldest element when no more room
-		let keys = this.keys()
-		if(keys.length > this.maxsize) {
-			let oldest_k = keys.pop()
-			keys.forEach( k => oldest_k = this.content[k][1] < this.content[oldest_k][1] ? k : oldest_k )
-			delete this.content[oldest_k]
-		}
-	}
-	get(key) {
-		this.content[key][1] = Date.now()
-		return this.content[key][0]
-	}
-	keys() { return Object.keys(this.content) }
 }
