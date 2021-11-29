@@ -455,21 +455,16 @@ class HiPSDefinition {
 
 	// find remotely a HiPSDefinition by ID
 	static findByIDRemote(id, callback) {
-		HiPSDefinition.findHiPSRemote({ID: '*' + id + '*'}, callback)
+		HiPSDefinition.findHiPSRemote({ID: `*${id}*`}, callback)
 	}
 
 	// search a HiPS according to some criteria
-	static findHiPSRemote(searchOptions, callback = ()=>{}) {
-		searchOptions = searchOptions || {}
+	static findHiPSRemote(searchOptions = {}, callback = ()=>{}) {
 		if (! searchOptions.hasOwnProperty('dataproduct_type')) {
 			searchOptions['dataproduct_type'] = 'image'
 		}
-		HiPSDefinition.getRemoteDefinitions(searchOptions, function(candidates) {
-			let defs = []
-			for (let k=0; k<candidates.length; k++) {
-				defs.push(new HiPSDefinition(candidates[k]))
-			}
-			callback(defs)
+		HiPSDefinition.getRemoteDefinitions(searchOptions, (candidates) => {
+			callback(candidates.map( candidate => new HiPSDefinition(candidate) ))
 		})
 	}
 
