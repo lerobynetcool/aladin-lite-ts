@@ -19,66 +19,59 @@
 
 /******************************************************************************
  * Aladin Lite project
- * 
+ *
  * File Utils
- * 
+ *
  * Author: Thomas Boch[CDS]
- * 
+ *
  *****************************************************************************/
 
-// adding relMouseCoords to HTMLCanvasElement prototype (see http://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element ) 
+// adding relMouseCoords to HTMLCanvasElement prototype (see http://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element )
 function relMouseCoords(event) {
-	var totalOffsetX = 0;
-	var totalOffsetY = 0;
-	var canvasX = 0;
-	var canvasY = 0;
-	var currentElement = this;
-   
 	if (event.offsetX) {
-		return {x: event.offsetX, y:event.offsetY};
-	} 
+		return {x: event.offsetX, y:event.offsetY}
+	}
 	else {
 		if (!Utils.cssScale) {
-			var st = window.getComputedStyle(document.body, null);
-			var tr = st.getPropertyValue("-webkit-transform") ||
+			let st = window.getComputedStyle(document.body, null)
+			let tr = st.getPropertyValue("-webkit-transform") ||
 					st.getPropertyValue("-moz-transform") ||
 					st.getPropertyValue("-ms-transform") ||
 					st.getPropertyValue("-o-transform") ||
-					st.getPropertyValue("transform");
-			var matrixRegex = /matrix\((-?\d*\.?\d+),\s*0,\s*0,\s*(-?\d*\.?\d+),\s*0,\s*0\)/;
-			var matches = tr.match(matrixRegex);
+					st.getPropertyValue("transform")
+			let matrixRegex = /matrix\((-?\d*\.?\d+),\s*0,\s*0,\s*(-?\d*\.?\d+),\s*0,\s*0\)/
+			let matches = tr.match(matrixRegex)
 			if (matches) {
-				Utils.cssScale = parseFloat(matches[1]);
+				Utils.cssScale = parseFloat(matches[1])
 			}
 			else {
-				Utils.cssScale = 1;
+				Utils.cssScale = 1
 			}
 		}
-		var e = event;
-		var canvas = e.target;
+		let e = event
 		// http://www.jacklmoore.com/notes/mouse-position/
-		var target = e.target || e.srcElement;
-		var style = target.currentStyle || window.getComputedStyle(target, null);
-		var borderLeftWidth = parseInt(style['borderLeftWidth'], 10);
-		var borderTopWidth = parseInt(style['borderTopWidth'], 10);
-		var rect = target.getBoundingClientRect();
+		let target = e.target || e.srcElement
+		let style = target.currentStyle || window.getComputedStyle(target, null)
+		let borderLeftWidth = parseInt(style['borderLeftWidth'], 10)
+		let borderTopWidth = parseInt(style['borderTopWidth'], 10)
+		let rect = target.getBoundingClientRect()
 
-		var clientX = e.clientX;
-		var clientY = e.clientY;
+		let clientX = e.clientX
+		let clientY = e.clientY
 		if (e.clientX == undefined) {
-			clientX = e.originalEvent.changedTouches[0].clientX;
-			clientY = e.originalEvent.changedTouches[0].clientY;
+			clientX = e.originalEvent.changedTouches[0].clientX
+			clientY = e.originalEvent.changedTouches[0].clientY
 		}
 
-		var offsetX = clientX - borderLeftWidth - rect.left;
-		var offsetY = clientY - borderTopWidth - rect.top
+		let offsetX = clientX - borderLeftWidth - rect.left
+		let offsetY = clientY - borderTopWidth - rect.top
 
-		return {x: parseInt(offsetX/Utils.cssScale), y: parseInt(offsetY/Utils.cssScale)};
+		return {x: parseInt(offsetX/Utils.cssScale), y: parseInt(offsetY/Utils.cssScale)}
 	}
 }
-HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords;
+HTMLCanvasElement.prototype.relMouseCoords = relMouseCoords
 
-//Function.prototype.bind polyfill from 
+//Function.prototype.bind polyfill from
 //https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Function/bind
 if (!Function.prototype.bind) {
 	Function.prototype.bind = function (obj) {
@@ -87,30 +80,29 @@ if (!Function.prototype.bind) {
 			throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
 		}
 
-		var slice = [].slice,
-		args = slice.call(arguments, 1),
-		self = this,
-		nop = function () { },
-		bound = function () {
-			return self.apply(this instanceof nop ? this : (obj || {}),
-					args.concat(slice.call(arguments)));
-		};
+		let slice = [].slice
+		let args = slice.call(arguments, 1)
+		let self = this
+		let nop = ()=>{}
+		let bound = function () {
+			return self.apply(
+				this instanceof nop ? this : (obj || {}),
+				args.concat(slice.call(arguments))
+			)
+		}
 
-		bound.prototype = this.prototype;
+		bound.prototype = this.prototype
 
-		return bound;
-	};
+		return bound
+	}
 }
 
 $ = $ || jQuery
 
 /* source : http://stackoverflow.com/a/8764051 */
-$.urlParam = function(name, queryString){
-	if (queryString===undefined) {
-		queryString = location.search;
-	}
-	return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(queryString)||[,""])[1].replace(/\+/g, '%20'))||null;
-};
+$.urlParam = function(name, queryString = location.search){
+	return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(queryString)||[,""])[1].replace(/\+/g, '%20'))||null
+}
 
 class Utils {
 	static cssScale = undefined
@@ -122,10 +114,10 @@ class Utils {
 
 	/* a debounce function, used to prevent multiple calls to the same function if less than delay milliseconds have passed */
 	static debounce(fn, delay) {
-		var timer = null
+		let timer = null
 		return function () {
-			var context = this
-			var args = arguments
+			let context = this
+			let args = arguments
 			clearTimeout(timer)
 			timer = setTimeout(() => fn.apply(context, args), delay)
 		}
@@ -134,13 +126,13 @@ class Utils {
 	/* return a throttled function, to rate limit the number of calls (by default, one call every 250 milliseconds) */
 	static throttle(fn, threshhold, scope) {
 		threshhold || (threshhold = 250)
-		var last
-		var deferTimer
+		let last
+		let deferTimer
 		return function () {
-			var context = scope || this
+			let context = scope || this
 
-			var now = +new Date
-			var args = arguments
+			let now = +new Date
+			let args = arguments
 			if (last && now < last + threshhold) {
 				// hold on to it
 				clearTimeout(deferTimer)
@@ -173,18 +165,18 @@ class Utils {
 
 	This method assumes the URL are CORS-compatible, no proxy will be used
 	*/
-	static loadFromMirrors(urls, options) {
-		var data    = options && options.data || null
-		var method = options && options.method || 'GET'
-		var dataType = options && options.dataType || null
-		var timeout = options && options.timeout || 20
+	static loadFromMirrors(urls, options = {}) {
+		let data     = options?.data || null
+		let method   = options?.method || 'GET'
+		let dataType = options?.dataType || null
+		let timeout  = options?.timeout || 20
 
-		var onSuccess = options?.onSuccess || (()=>{})
-		var onFailure = options?.onFailure || (()=>{})
+		let onSuccess = options?.onSuccess || (()=>{})
+		let onFailure = options?.onFailure || (()=>{})
 
 		if (urls.length === 0) onFailure()
 		else {
-			var ajaxOptions = {
+			let ajaxOptions = {
 				url: urls[0],
 				data: data
 			}
@@ -201,8 +193,9 @@ class Utils {
 	// return the jquery ajax object configured with the requested parameters
 	// by default, we use the proxy (safer, as we don't know if the remote server supports CORS)
 	static getAjaxObject(url, method, dataType, useProxy = true) {
+		let urlToRequest
 		if (useProxy===true) {
-			var urlToRequest = Aladin.JSONP_PROXY + '?url=' + encodeURIComponent(url)
+			urlToRequest = Aladin.JSONP_PROXY + '?url=' + encodeURIComponent(url)
 		}
 		else {
 			urlToRequest = url
@@ -242,39 +235,39 @@ class Utils {
 
 Utils.LRUCache = class {
 	set(key, value) {
-		var keys = this._keys,
-			items = this._items,
-			expires = this._expires,
-			size = this._size,
-			maxsize = this._maxsize;
+		let keys    = this._keys
+		let items   = this._items
+		let expires = this._expires
+		let size    = this._size
+		let maxsize = this._maxsize
 
 		if (size >= maxsize) { // remove oldest element when no more room
 			keys.sort(function (a, b) {
-				if (expires[a] > expires[b]) return -1;
-				if (expires[a] < expires[b]) return 1;
-				return 0;
-			});
+				if (expires[a] > expires[b]) return -1
+				if (expires[a] < expires[b]) return 1
+				return 0
+			})
 
-			size--;
-			delete expires[keys[size]];
-			delete items[keys[size]];
+			size--
+			delete expires[keys[size]]
+			delete items[keys[size]]
 		}
 
-		keys[size] = key;
-		items[key] = value;
-		expires[key] = Date.now();
-		size++;
+		keys[size] = key
+		items[key] = value
+		expires[key] = Date.now()
+		size++
 
-		this._keys = keys;
-		this._items = items;
-		this._expires = expires;
-		this._size = size;
+		this._keys = keys
+		this._items = items
+		this._expires = expires
+		this._size = size
 	}
 
 	get(key) {
-		var item = this._items[key];
-		if (item) this._expires[key] = Date.now();
-		return item;
+		var item = this._items[key]
+		if (item) this._expires[key] = Date.now()
+		return item
 	}
 
 	keys() {
