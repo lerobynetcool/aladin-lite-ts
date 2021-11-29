@@ -77,9 +77,9 @@ class AladinUtils {
 		return AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor, false)
 	}
 
-	myRound(a) {
-		if (a<0) return -1*( (-a) | 0)
-		else     return         a | 0
+	static myRound(a) {
+		if (a<0) return -((-a)|0)
+		else     return      a|0
 	}
 
 	/*
@@ -87,7 +87,7 @@ class AladinUtils {
 	 * @param pixCorners array of position (xy view) of the corners of the pixel
 	 * @param viewW
 	 */
-	isHpxPixVisible(pixCorners, viewWidth, viewHeight) {
+	static isHpxPixVisible(pixCorners, viewWidth, viewHeight) {
 		return pixCorners.find(pix =>
 			pix.vx>=-20 && pix.vx<(viewWidth +20) &&
 			pix.vy>=-20 && pix.vy<(viewHeight+20)
@@ -100,7 +100,7 @@ class AladinUtils {
 	// 	}
 	// }
 
-	getZoomFactorForAngle(angleInDegrees, projectionMethod) {
+	static getZoomFactorForAngle(angleInDegrees, projectionMethod) {
 		let p1 = {ra: 0, dec: 0}
 		let p2 = {ra: angleInDegrees, dec: 0}
 		let projection = new Projection(angleInDegrees/2, 0)
@@ -114,7 +114,7 @@ class AladinUtils {
 	}
 
 	// grow array b of vx,vy view positions by *val* pixels
-	grow2(b, val) {
+	static grow2(b, val) {
 		let j=0
 		for (let i=0; i<4; i++) {
 			if ( b[i]==null ) j++
