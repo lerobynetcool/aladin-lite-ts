@@ -36,15 +36,10 @@ class AladinUtils {
 	 * @param largestDim largest dimension of the view
 	 * @returns position in the view
 	 */
-	static xyToView(x, y, width, height, largestDim, zoomFactor, round) {
-		if (round==undefined) {
-			// we round by default
-			round = true;
-		}
-
+	static xyToView(x, y, width, height, largestDim, zoomFactor, round = true) {
 		// we round the result for potential performance gains
-		if (round) return {vx: AladinUtils.myRound(largestDim/2*(1+zoomFactor*x)-(largestDim-width)/2), vy: AladinUtils.myRound(largestDim/2*(1+zoomFactor*y)-(largestDim-height)/2)};
-		else       return {vx: largestDim/2*(1+zoomFactor*x)-(largestDim-width)/2                     , vy: largestDim/2*(1+zoomFactor*y)-(largestDim-height)/2};
+		if (round) return {vx: AladinUtils.myRound(largestDim/2*(1+zoomFactor*x)-(largestDim-width)/2), vy: AladinUtils.myRound(largestDim/2*(1+zoomFactor*y)-(largestDim-height)/2)}
+		else       return {vx: largestDim/2*(1+zoomFactor*x)-(largestDim-width)/2                     , vy: largestDim/2*(1+zoomFactor*y)-(largestDim-height)/2}
 	}
 
 	/*
