@@ -102,7 +102,7 @@ class Utils {
 		threshhold || (threshhold = 250)
 		let last
 		let deferTimer
-		return function () {
+		return function() {
 			let context = scope || this
 
 			let now = +new Date
@@ -186,55 +186,23 @@ class Utils {
 	}
 }
 
+// TODO : utiliser le LRU cache pour les tuiles images
 Utils.LRUCache = class {
-	/* A LRU cache, inspired by https://gist.github.com/devinus/409353#file-gistfile1-js */
-	// TODO : utiliser le LRU cache pour les tuiles images
-	constructor(maxsize) {
-		this._keys = []
-		this._items = {}
-		this._expires = {}
-		this._size = 0
-		this._maxsize = maxsize || 1024
-	}
-
+	content = {}
+	constructor(maxsize=1024) { this.maxsize = maxsize }
 	set(key, value) {
-		let keys    = this._keys
-		let items   = this._items
-		let expires = this._expires
-		let size    = this._size
-		let maxsize = this._maxsize
-
-		if (size >= maxsize) { // remove oldest element when no more room
-			keys.sort(function (a, b) {
-				if (expires[a] > expires[b]) return -1
-				if (expires[a] < expires[b]) return 1
-				return 0
-			})
-
-			size--
-			delete expires[keys[size]]
-			delete items[keys[size]]
+		this.content[key] = [ value, Date.now() ]
+		// remove oldest element when no more room
+		let keys = this.keys()
+		if(keys.length > this.maxsize) {
+			let oldest_k = keys.pop()
+			keys.forEach( k => oldest_k = this.content[k][1] < this.content[oldest_k][1] ? k : oldest_k )
+			delete this.content[oldest_k]
 		}
-
-		keys[size] = key
-		items[key] = value
-		expires[key] = Date.now()
-		size++
-
-		this._keys = keys
-		this._items = items
-		this._expires = expires
-		this._size = size
 	}
-
 	get(key) {
-		var item = this._items[key]
-		if (item) this._expires[key] = Date.now()
-		return item
+		this.content[key][1] = Date.now()
+		return this.content[key][0]
 	}
-
-	keys() {
-		return this._keys
-	}
-
+	keys() { return Object.keys(this.content) }
 }
