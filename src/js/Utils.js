@@ -98,8 +98,7 @@ class Utils {
 	}
 
 	/* return a throttled function, to rate limit the number of calls (by default, one call every 250 milliseconds) */
-	static throttle(fn, threshhold, scope) {
-		threshhold || (threshhold = 250)
+	static throttle(fn, threshhold = 250, scope) {
 		let last
 		let deferTimer
 		return function() {
@@ -145,7 +144,6 @@ class Utils {
 			if (dataType) {
 				ajaxOptions.dataType = dataType
 			}
-
 			$.ajax(ajaxOptions)
 				.done( (data) => onSuccess(data) )
 				.fail( () => Utils.loadFromMirrors(urls.slice(1), options) )
@@ -159,15 +157,13 @@ class Utils {
 		return $.ajax({
 			url: urlToRequest,
 			method: method,
-			dataType: dataType
+			dataType: dataType,
 		})
 	}
 
 	// return true if script is executed in a HTTPS context
 	// return false otherwise
-	static isHttpsContext() {
-		return ( window.location.protocol === 'https:' )
-	}
+	static isHttpsContext() { return ( window.location.protocol === 'https:' ) }
 
 	// generate an absolute URL from a relative URL
 	// example: getAbsoluteURL('foo/bar/toto') return http://cds.unistra.fr/AL/foo/bar/toto if executed from page http://cds.unistra.fr/AL/
@@ -189,6 +185,7 @@ class Utils {
 // TODO : utiliser le LRU cache pour les tuiles images
 Utils.LRUCache = class {
 	content = {}
+
 	constructor(maxsize=1024) { this.maxsize = maxsize }
 	set(key, value) {
 		this.content[key] = [ value, Date.now() ]
