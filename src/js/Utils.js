@@ -54,22 +54,6 @@ function relMouseCoords(event) {
 		return {x: event.offsetX, y:event.offsetY}
 	}
 	else {
-		if (!Utils.cssScale) {
-			let st = window.getComputedStyle(document.body, null)
-			let tr = st.getPropertyValue("-webkit-transform") ||
-					st.getPropertyValue("-moz-transform") ||
-					st.getPropertyValue("-ms-transform") ||
-					st.getPropertyValue("-o-transform") ||
-					st.getPropertyValue("transform")
-			let matrixRegex = /matrix\((-?\d*\.?\d+),\s*0,\s*0,\s*(-?\d*\.?\d+),\s*0,\s*0\)/
-			let matches = tr.match(matrixRegex)
-			if (matches) {
-				Utils.cssScale = parseFloat(matches[1])
-			}
-			else {
-				Utils.cssScale = 1
-			}
-		}
 		let e = event
 		// http://www.jacklmoore.com/notes/mouse-position/
 		let target = e.target || e.srcElement
@@ -101,7 +85,24 @@ $.urlParam = function(name, queryString = location.search){
 }
 
 class Utils {
-	static cssScale = undefined
+	static __cssScale = undefined
+	// TODO : this sounds hackish and not clean
+	static get cssScale() {
+		if(Utils.__cssScale === undefined) {
+			let st = window.getComputedStyle(document.body, null)
+			let tr = st.getPropertyValue("transform") ||
+					st.getPropertyValue("-webkit-transform") ||
+					st.getPropertyValue("-moz-transform") ||
+					st.getPropertyValue("-ms-transform") ||
+					st.getPropertyValue("-o-transform")
+			let matrixRegex = /matrix\((-?\d*\.?\d+),\s*0,\s*0,\s*(-?\d*\.?\d+),\s*0,\s*0\)/
+			let matches = tr.match(matrixRegex)
+			Utils.__cssScale = matches ? parseFloat(matches[1]) : 1
+			// TODO add event Listener to watch changes on CSS.
+		}
+		return Utils.__cssScale
+	}
+	static set cssScale(v) { Utils.__cssScale = v }
 
 	/* source: http://stackoverflow.com/a/1830844 */
 	static isNumber(n) { return !isNaN(parseFloat(n)) && isFinite(n) }
