@@ -31,21 +31,20 @@
 // it is made of :
 // - a static cache for HEALPix corners at nside=8
 // - a dynamic cache for
-HealpixCache = (function() {
 
-	var HealpixCache = {};
+class HealpixCache {
 
-	HealpixCache.staticCache = {corners: {nside8: []}};
+	static staticCache = {corners: {nside8: []}}
 	// TODO : utilisation du dynamicCache
-	HealpixCache.dynamicCache = {};
+	static dynamicCache = {}
 
-	HealpixCache.lastNside = 8;
+	static lastNside = 8
 
-	HealpixCache.hpxIdxCache = null;
+	static hpxIdxCache = null
 
 	// TODO : conserver en cache le dernier résultat ?
 
-	HealpixCache.init = function() {
+	static init() {
 		// pre-compute corners position for nside=8
 		var hpxIdx = new HealpixIndex(8);
 		hpxIdx.init();
@@ -57,11 +56,9 @@ HealpixCache = (function() {
 		}
 
 		HealpixCache.hpxIdxCache = hpxIdx;
-	};
+	}
 
-	HealpixCache.init();
-
-	HealpixCache.corners_nest = function(ipix, nside) {
+	static corners_nest(ipix, nside) {
 		if (nside==8) {
 			return HealpixCache.staticCache.corners.nside8[ipix];
 		}
@@ -73,9 +70,8 @@ HealpixCache = (function() {
 		}
 
 		return HealpixCache.hpxIdxCache.corners_nest(ipix, 1);
+	}
 
-	};
+}
 
-	return HealpixCache;
-})();
-
+HealpixCache.init()
