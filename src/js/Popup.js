@@ -28,8 +28,7 @@
 
 class Popup {
 
-	// constructor
-	Popup = function(parentDiv, view) {
+	constructor(parentDiv, view) {
 		this.domEl = $('<div class="aladin-popup-container"><div class="aladin-popup"><a class="aladin-closeBtn">&times;</a><div class="aladin-popupTitle"></div><div class="aladin-popupText"></div></div><div class="aladin-popup-arrow"></div></div>');
 		this.domEl.appendTo(parentDiv);
 
