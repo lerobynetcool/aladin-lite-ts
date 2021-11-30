@@ -32,29 +32,29 @@ let NB_MAX_TILES = 800 // buffer size
 
 export class TileBuffer {
 
-	pointer = 0
 	tilesMap: {[key: string]: Tile} = {}
-	tilesArray: Tile[] = Array.from({length: NB_MAX_TILES}, () => new Tile(new Image(), null))
-	
+	tilesArray: Tile[] = []
+
 	addTile(url: string) {
-		// return null if already in buffer
-		if (this.getTile(url)) return null
+		// if already in buffer
+		if (this.getTile(url)) return
 
-		// delete existing tile
-		let curTile = this.tilesArray[this.pointer]
-		if (curTile.url != null) {
-			curTile.img.src = ""
-			delete this.tilesMap[curTile.url]
+		let tile: Tile
+		if (this.tilesArray.length<NB_MAX_TILES) {
+			// create new one
+			tile = new Tile(new Image(), url)
+		} else {
+			// reuse old one
+			tile = this.tilesArray.shift() as Tile
+			tile.img.src = ""
+			tile.url = url
+			delete this.tilesMap[tile.url]
 		}
-
-		this.tilesArray[this.pointer].url = url
-		this.tilesMap[url] = this.tilesArray[this.pointer]
-
-		this.pointer++
-		if (this.pointer>=NB_MAX_TILES) this.pointer = 0
+		this.tilesArray.push(tile)
+		this.tilesMap[url] = tile
 
 		return this.tilesMap[url]
 	}
 
-	getTile(url: string) { return this.tilesMap[url] }
+	getTile(url: string): Tile|undefined { return this.tilesMap[url] }
 }

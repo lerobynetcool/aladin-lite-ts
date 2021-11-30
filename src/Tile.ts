@@ -29,9 +29,9 @@
 export class Tile {
 
 	img: HTMLImageElement
-	url: string|null
+	url: string
 
-	constructor(img: HTMLImageElement, url: string|null) {
+	constructor(img: HTMLImageElement, url: string) {
 		this.img = img
 		this.url = url
 	}
