@@ -27,10 +27,87 @@
  *
  *****************************************************************************/
 
-Aladin = (function() {
+function doAnimation(aladin) {
+	var params = aladin.animationParams;
+	if (params==null || ! params['running']) return;
+	var now = new Date().getTime();
+	// this is the animation end: set the view to the end position, and call complete callback
+	if (now>params['end']) {
+		aladin.gotoRaDec(params['raEnd'], params['decEnd']);
+		if (params['complete']) params['complete']();
+		return;
+	}
+
+	// compute current position
+	var fraction =  (now-params['start']) / (params['end'] - params['start']);
+	var curPos = intermediatePoint(params['raStart'], params['decStart'], params['raEnd'], params['decEnd'], fraction);
+	curRa =  curPos[0];
+	curDec = curPos[1];
+	//var curRa =  params['raStart'] + (params['raEnd'] - params['raStart']) * (now-params['start']) / (params['end'] - params['start']);
+	//var curDec = params['decStart'] + (params['decEnd'] - params['decStart']) * (now-params['start']) / (params['end'] - params['start']);
+
+	aladin.gotoRaDec(curRa, curDec);
+
+	setTimeout(function() {doAnimation(aladin);}, 50);
+}
+
+function doZoomAnimation(aladin) {
+	var params = aladin.zoomAnimationParams;
+	if (params==null || ! params['running']) return;
+	var now = new Date().getTime();
+	// this is the zoom animation end: set the view to the end fov, and call complete callback
+	if (now>params['end']) {
+		aladin.setFoV(params['fovEnd']);
+		if (params['complete']) params['complete']();
+		return;
+	}
+
+	// compute current position
+	var fraction = (now-params['start']) / (params['end'] - params['start']);
+	var curFov =  params['fovStart'] + (params['fovEnd'] - params['fovStart']) * Math.sqrt(fraction);
+
+	aladin.setFoV(curFov);
+
+	setTimeout(function() {doZoomAnimation(aladin);}, 50);
+}
+
+/**
+ *  Compute intermediate point between points (lng1, lat1) and (lng2, lat2)
+ *  at distance fraction times the total distance (fraction between 0 and 1)
+ *
+ *  Return intermediate points in degrees
+ *
+ */
+function intermediatePoint(lng1, lat1, lng2, lat2, fraction) {
+	function degToRad(d) {
+		return d * Math.PI / 180;
+	}
+	function radToDeg(r) {
+		return r * 180 / Math.PI;
+	}
+	var lat1=degToRad(lat1);
+	var lng1=degToRad(lng1);
+	var lat2=degToRad(lat2);
+	var lng2=degToRad(lng2);
+	var d = 2 * Math.asin(
+				Math.sqrt(Math.pow((Math.sin((lat1 - lat2) / 2)), 2) +
+				Math.cos(lat1) * Math.cos(lat2) *
+				Math.pow(Math.sin((lng1-lng2) / 2), 2)));
+	var A = Math.sin((1 - fraction) * d) / Math.sin(d);
+	var B = Math.sin(fraction * d) / Math.sin(d);
+	var x = A * Math.cos(lat1) * Math.cos(lng1) + B * Math.cos(lat2) * Math.cos(lng2);
+	var y = A * Math.cos(lat1) * Math.sin(lng1) + B * Math.cos(lat2) * Math.sin(lng2);
+	var z = A * Math.sin(lat1) + B * Math.sin(lat2);
+	var lon = Math.atan2(y, x);
+	var lat = Math.atan2(z, Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)));
+
+	return [radToDeg(lon), radToDeg(lat)];
+}
+
+class Aladin {
 
 	// Constructor
-	var Aladin = function(aladinDiv, requestedOptions) {
+	constructor(aladinDiv, requestedOptions) {
 		// check that aladinDiv exists, stop immediately otherwise
 		if ($(aladinDiv).length==0) {
 			console.log(`Could not find div ${aladinDiv}. Aborting creation of Aladin Lite instance`);
@@ -305,12 +382,12 @@ Aladin = (function() {
 	};
 
 	/**** CONSTANTS ****/
-	Aladin.VERSION = "{ALADIN-LITE-VERSION-NUMBER}"; // will be filled by the build.sh script
+	static VERSION = "{ALADIN-LITE-VERSION-NUMBER}"; // will be filled by the build.sh script
 
-	Aladin.JSONP_PROXY = "https://alasky.unistra.fr/cgi/JSONProxy";
-	//Aladin.JSONP_PROXY = "https://alaskybis.unistra.fr/cgi/JSONProxy";
+	static JSONP_PROXY = "https://alasky.unistra.fr/cgi/JSONProxy";
+	//static JSONP_PROXY = "https://alaskybis.unistra.fr/cgi/JSONProxy";
 
-	Aladin.DEFAULT_OPTIONS = {
+	static DEFAULT_OPTIONS = {
 		target:                   "0 +0",
 		cooFrame:                 "J2000",
 		survey:                   "P/DSS2/color",
@@ -338,7 +415,7 @@ Aladin = (function() {
 	};
 
 	// realFullscreen: AL div expands not only to the size of its parent, but takes the whole available screen estate
-	Aladin.prototype.toggleFullscreen = function(realFullscreen) {
+	toggleFullscreen(realFullscreen) {
 		realFullscreen = Boolean(realFullscreen);
 
 		this.fullScreenBtn.toggleClass('aladin-maximize aladin-restore');
@@ -374,7 +451,7 @@ Aladin = (function() {
 		(typeof fullScreenToggledFn === 'function') && fullScreenToggledFn(isInFullscreen);
 	};
 
-	Aladin.prototype.updateSurveysDropdownList = function(surveys) {
+	updateSurveysDropdownList(surveys) {
 		surveys.sort(function(a, b) {
 			if (! a.order) return a.id > b.id;
 			return a.order && a.order > b.order ? 1 : -1;
@@ -387,7 +464,7 @@ Aladin = (function() {
 		};
 	};
 
-	Aladin.prototype.getOptionsFromQueryString = function() {
+	getOptionsFromQueryString() {
 		var options = {};
 		var requestedTarget = $.urlParam('target');
 		if (requestedTarget) {
@@ -426,26 +503,22 @@ Aladin = (function() {
 
 	// TODO: rename to setFoV
 	//@oldAPI
-	Aladin.prototype.setZoom = function(fovDegrees) {
-		this.view.setZoom(fovDegrees);
-	};
+	setZoom(fovDegrees) { this.view.setZoom(fovDegrees) }
 
 	// @API
-	Aladin.prototype.setFoV = Aladin.prototype.setFov = function(fovDegrees) {
-		this.view.setZoom(fovDegrees);
-	};
+	setFoV(fovDegrees) { this.view.setZoom(fovDegrees) }
+	setFov(fovDegrees) { return this.setFoV(fovDegrees) }
 
 	// @API
 	// (experimental) try to adjust the FoV to the given object name. Does nothing if object is not known from Simbad
-	Aladin.prototype.adjustFovForObject = function(objectName) {
-		var self = this;
+	adjustFovForObject(objectName) {
+		var self = this
 		this.getFovForObject(objectName, function(fovDegrees) {
-			self.setFoV(fovDegrees);
-		});
-	};
+			self.setFoV(fovDegrees)
+		})
+	}
 
-
-	Aladin.prototype.getFovForObject = function(objectName, callback) {
+	getFovForObject(objectName, callback) {
 		var query = `SELECT galdim_majaxis, V FROM basic JOIN ident ON oid=ident.oidref JOIN allfluxes ON oid=allfluxes.oidref WHERE id='${objectName}'`;
 		var url = '//simbad.u-strasbg.fr/simbad/sim-tap/sync?query=' + encodeURIComponent(query) + '&request=doQuery&lang=adql&format=json&phase=run';
 
@@ -468,9 +541,9 @@ Aladin = (function() {
 
 			(typeof callback === 'function') && callback(fov);
 		});
-	};
+	}
 
-	Aladin.prototype.setFrame = function(frameName) {
+	setFrame(frameName) {
 		if (! frameName) return;
 		var newFrame = CooFrameEnum.fromString(frameName, CooFrameEnum.J2000);
 		if (newFrame==this.view.cooFrame) return;
@@ -478,9 +551,9 @@ Aladin = (function() {
 		this.view.changeFrame(newFrame);
 		// màj select box
 		$(this.aladinDiv).find('.aladin-frameChoice').val(newFrame.label);
-	};
+	}
 
-	Aladin.prototype.setProjection = function(projectionName) {
+	setProjection(projectionName) {
 		if (! projectionName) return;
 		projectionName = projectionName.toLowerCase();
 		switch(projectionName) {
@@ -491,7 +564,7 @@ Aladin = (function() {
 			default:
 				this.view.changeProjection(ProjectionEnum.SIN);
 		}
-	};
+	}
 
 	/** point view to a given object (resolved by Sesame) or position
 	 * @api
@@ -500,7 +573,7 @@ Aladin = (function() {
 	 * @callbackOptions: (optional) the object with key 'success' and/or 'error' containing the success and error callback functions.
 	 *
 	 */
-	Aladin.prototype.gotoObject = function(targetName, callbackOptions) {
+	gotoObject(targetName, callbackOptions) {
 		var successCallback = errorCallback = undefined;
 		if (typeof callbackOptions === 'object') {
 			if (callbackOptions.hasOwnProperty('success')) {
@@ -514,7 +587,6 @@ Aladin = (function() {
 		else if (typeof callbackOptions === 'function') {
 			errorCallback = callbackOptions;
 		}
-
 
 		var isObjectName = /[a-zA-Z]/.test(targetName);
 
@@ -550,51 +622,27 @@ Aladin = (function() {
 					(typeof errorCallback === 'function') && errorCallback();
 				});
 		}
-	};
+	}
 
 	/**
 	 * go to a given position, expressed in the current coordinate frame
 	 *
 	 * @API
 	 */
-	Aladin.prototype.gotoPosition = function(lon, lat) {
+	gotoPosition(lon, lat) {
 		var radec;
 		// first, convert to J2000 if needed
 		if (this.view.cooFrame==CooFrameEnum.GAL) radec = CooConversion.GalacticToJ2000([lon, lat]);
 		else radec = [lon, lat];
 		this.view.pointTo(radec[0], radec[1]);
-	};
-
-	var doAnimation = function(aladin) {
-		var params = aladin.animationParams;
-		if (params==null || ! params['running']) return;
-		var now = new Date().getTime();
-		// this is the animation end: set the view to the end position, and call complete callback
-		if (now>params['end']) {
-			aladin.gotoRaDec(params['raEnd'], params['decEnd']);
-			if (params['complete']) params['complete']();
-			return;
-		}
-
-		// compute current position
-		var fraction =  (now-params['start']) / (params['end'] - params['start']);
-		var curPos = intermediatePoint(params['raStart'], params['decStart'], params['raEnd'], params['decEnd'], fraction);
-		curRa =  curPos[0];
-		curDec = curPos[1];
-		//var curRa =  params['raStart'] + (params['raEnd'] - params['raStart']) * (now-params['start']) / (params['end'] - params['start']);
-		//var curDec = params['decStart'] + (params['decEnd'] - params['decStart']) * (now-params['start']) / (params['end'] - params['start']);
-
-		aladin.gotoRaDec(curRa, curDec);
-
-		setTimeout(function() {doAnimation(aladin);}, 50);
-	};
+	}
 
 	/*
 	 * Stop all animations that have been initiated  by animateToRaDec or by zoomToFoV
 	 * @API
 	 *
 	 */
-	Aladin.prototype.stopAnimation =  function() {
+	stopAnimation() {
 		if (this.zoomAnimationParams) this.zoomAnimationParams['running'] = false;
 		if (this.animationParams)     this.animationParams['running']     = false;
 	}
@@ -609,7 +657,7 @@ Aladin = (function() {
 	 * @API
 	 *
 	 */
-	Aladin.prototype.animateToRaDec = function(ra, dec, duration, complete) {
+	animateToRaDec(ra, dec, duration, complete) {
 		duration = duration || 5;
 
 		this.animationParams = null;
@@ -628,28 +676,8 @@ Aladin = (function() {
 		this.animationParams = animationParams;
 
 		doAnimation(this);
-	};
+	}
 
-	var doZoomAnimation = function(aladin) {
-		var params = aladin.zoomAnimationParams;
-		if (params==null || ! params['running']) return;
-		var now = new Date().getTime();
-		// this is the zoom animation end: set the view to the end fov, and call complete callback
-		if (now>params['end']) {
-			aladin.setFoV(params['fovEnd']);
-			if (params['complete']) params['complete']();
-			return;
-		}
-
-		// compute current position
-		var fraction = (now-params['start']) / (params['end'] - params['start']);
-		var curFov =  params['fovStart'] + (params['fovEnd'] - params['fovStart']) * Math.sqrt(fraction);
-
-		aladin.setFoV(curFov);
-
-		setTimeout(function() {doZoomAnimation(aladin);}, 50);
-
-	};
 	/*
 	 * zoom smoothly from the current FoV to the given new fov to the given ra, dec
 	 *
@@ -660,7 +688,7 @@ Aladin = (function() {
 	 * @API
 	 *
 	 */
-	Aladin.prototype.zoomToFoV = function(fov, duration, complete) {
+	zoomToFoV(fov, duration, complete) {
 		duration = duration || 5;
 
 		this.zoomAnimationParams = null;
@@ -676,51 +704,14 @@ Aladin = (function() {
 
 		this.zoomAnimationParams = zoomAnimationParams;
 		doZoomAnimation(this);
-	};
-
-	/**
-	 *  Compute intermediate point between points (lng1, lat1) and (lng2, lat2)
-	 *  at distance fraction times the total distance (fraction between 0 and 1)
-	 *
-	 *  Return intermediate points in degrees
-	 *
-	 */
-	function intermediatePoint(lng1, lat1, lng2, lat2, fraction) {
-		function degToRad(d) {
-			return d * Math.PI / 180;
-		}
-		function radToDeg(r) {
-			return r * 180 / Math.PI;
-		}
-		var lat1=degToRad(lat1);
-		var lng1=degToRad(lng1);
-		var lat2=degToRad(lat2);
-		var lng2=degToRad(lng2);
-		var d = 2 * Math.asin(
-					Math.sqrt(Math.pow((Math.sin((lat1 - lat2) / 2)),
-					2) +
-					Math.cos(lat1) * Math.cos(lat2) *
-					Math.pow(Math.sin((lng1-lng2) / 2), 2)));
-		var A = Math.sin((1 - fraction) * d) / Math.sin(d);
-		var B = Math.sin(fraction * d) / Math.sin(d);
-		var x = A * Math.cos(lat1) * Math.cos(lng1) + B *
-			Math.cos(lat2) * Math.cos(lng2);
-		var y = A * Math.cos(lat1) * Math.sin(lng1) + B *
-			Math.cos(lat2) * Math.sin(lng2);
-		var z = A * Math.sin(lat1) + B * Math.sin(lat2);
-		var lon = Math.atan2(y, x);
-		var lat = Math.atan2(z, Math.sqrt(Math.pow(x, 2) +
-			 Math.pow(y, 2)));
-
-		return [radToDeg(lon), radToDeg(lat)];
-	};
+	}
 
 	/**
 	 * get current [ra, dec] position of the center of the view
 	 *
 	 * @API
 	 */
-	Aladin.prototype.getRaDec = function() {
+	getRaDec() {
 		if (this.view.cooFrame.system==CooFrameEnum.SYSTEMS.J2000) {
 			return [this.view.viewCenter.lon, this.view.viewCenter.lat];
 		}
@@ -728,59 +719,41 @@ Aladin = (function() {
 			var radec = CooConversion.GalacticToJ2000([this.view.viewCenter.lon, this.view.viewCenter.lat]);
 			return radec;
 		}
-	};
+	}
 
 	/**
 	 * point to a given position, expressed as a ra,dec coordinate
 	 *
 	 * @API
 	 */
-	Aladin.prototype.gotoRaDec = function(ra, dec) {
-		this.view.pointTo(ra, dec);
-	};
+	gotoRaDec(ra, dec) { this.view.pointTo(ra, dec) }
 
-	Aladin.prototype.showHealpixGrid = function(show) {
-		this.view.showHealpixGrid(show);
-	};
+	showHealpixGrid(show) { this.view.showHealpixGrid(show) }
 
-	Aladin.prototype.showSurvey = function(show) {
-		this.view.showSurvey(show);
-	};
-	Aladin.prototype.showCatalog = function(show) {
-		this.view.showCatalog(show);
-	};
-	Aladin.prototype.showReticle = function(show) {
+	showSurvey(show) {this.view.showSurvey(show) }
+	showCatalog(show) { this.view.showCatalog(show) }
+	showReticle(show) {
 		this.view.showReticle(show);
 		$('#displayReticle').attr('checked', show);
-	};
-	Aladin.prototype.removeLayers = function() {
-		this.view.removeLayers();
-	};
+	}
+	removeLayers() { this.view.removeLayers() }
 
 	// these 3 methods should be merged into a unique "add" method
-	Aladin.prototype.addCatalog = function(catalog) {
-		this.view.addCatalog(catalog);
-	};
-	Aladin.prototype.addOverlay = function(overlay) {
-		this.view.addOverlay(overlay);
-	};
-	Aladin.prototype.addMOC = function(moc) {
-		this.view.addMOC(moc);
-	};
+	addCatalog(catalog) { this.view.addCatalog(catalog) }
+	addOverlay(overlay) { this.view.addOverlay(overlay) }
+	addMOC(moc) { this.view.addMOC(moc) }
 
 	// @oldAPI
-	Aladin.prototype.createImageSurvey = function(id, name, rootUrl, cooFrame, maxOrder, options) {
-		return new HpxImageSurvey(id, name, rootUrl, cooFrame, maxOrder, options);
-	};
+	createImageSurvey(id, name, rootUrl, cooFrame, maxOrder, options) {
+		return new HpxImageSurvey(id, name, rootUrl, cooFrame, maxOrder, options)
+	}
 
 	// @api
-	Aladin.prototype.getBaseImageLayer = function() {
-		return this.view.imageSurvey;
-	};
+	getBaseImageLayer() { return this.view.imageSurvey }
 	// @param imageSurvey : HpxImageSurvey object or image survey identifier
 	// @api
 	// @old
-	Aladin.prototype.setImageSurvey = function(imageSurvey, callback) {
+	setImageSurvey(imageSurvey, callback) {
 		this.view.setImageSurvey(imageSurvey, callback);
 		this.updateSurveysDropdownList(HpxImageSurvey.getAvailableSurveys());
 		if (this.options.log) {
@@ -788,191 +761,87 @@ Aladin = (function() {
 			if (typeof imageSurvey !== "string") id = imageSurvey.rootUrl;
 			Logger.log("changeImageSurvey", id);
 		}
-	};
-	// @api
-	Aladin.prototype.setBaseImageLayer = Aladin.prototype.setImageSurvey;
+	}
 
 	// @api
-	Aladin.prototype.getOverlayImageLayer = function() {
-		return this.view.overlayImageSurvey;
-	};
-	// @api
-	Aladin.prototype.setOverlayImageLayer = function(imageSurvey, callback) {
-		this.view.setOverlayImageSurvey(imageSurvey, callback);
-	};
+	setBaseImageLayer(imageSurvey, callback) { return this.setImageSurvey(imageSurvey, callback) }
 
-	Aladin.prototype.increaseZoom = function(step) {
-		if (!step) {
-			step = 5;
-		}
+	// @api
+	getOverlayImageLayer() { return this.view.overlayImageSurvey }
+
+	// @api
+	setOverlayImageLayer(imageSurvey, callback) { this.view.setOverlayImageSurvey(imageSurvey, callback) }
+
+	increaseZoom(step) {
+		if (!step) step = 5
 		this.view.setZoomLevel(this.view.zoomLevel+step);
-	};
+	}
 
-	Aladin.prototype.decreaseZoom = function(step) {
-		if (!step) {
-			step = 5;
-		}
+	decreaseZoom(step) {
+		if (!step) step = 5
 		this.view.setZoomLevel(this.view.zoomLevel-step);
-	};
+	}
 
 	// @oldAPI
-	Aladin.prototype.createCatalog = function(options) {
-		return A.catalog(options);
-	};
+	createCatalog(options) { return A.catalog(options) }
 
-	Aladin.prototype.createProgressiveCatalog = function(url, frame, maxOrder, options) {
+	createProgressiveCatalog(url, frame, maxOrder, options) {
 		return new ProgressiveCat(url, frame, maxOrder, options);
-	};
+	}
 
 	// @oldAPI
-	Aladin.prototype.createSource = function(ra, dec, data) {
+	createSource(ra, dec, data) {
 		return new cds.Source(ra, dec, data);
-	};
+	}
+
 	// @oldAPI
-	Aladin.prototype.createMarker = function(ra, dec, options, data) {
+	createMarker(ra, dec, options, data) {
 		options = options || {};
 		options['marker'] = true;
 		return new cds.Source(ra, dec, data, options);
-	};
-
-	Aladin.prototype.createOverlay = function(options) {
-		return new Overlay(options);
-	};
-
-	// @oldAPI
-	Aladin.prototype.createFootprintsFromSTCS = function(stcs) {
-		return A.footprintsFromSTCS(stcs);
-	};
-
-	// API
-	A.footprintsFromSTCS = function(stcs) {
-		var footprints = Overlay.parseSTCS(stcs);
-		return footprints;
 	}
 
-	// API
-	A.MOCFromURL = function(url, options, successCallback) {
-		var moc = new MOC(options);
-		moc.dataFromFITSURL(url, successCallback);
-		return moc;
-	};
-
-	// API
-	A.MOCFromJSON = function(jsonMOC, options) {
-		var moc = new MOC(options);
-		moc.dataFromJSON(jsonMOC);
-		return moc;
-	};
+	createOverlay(options) { return new Overlay(options) }
 
 	// @oldAPI
-	Aladin.prototype.createCatalogFromVOTable = function(url, options) {
-		return A.catalogFromURL(url, options);
-	};
+	createFootprintsFromSTCS(stcs) {
+		return A.footprintsFromSTCS(stcs)
+	}
 
-	// TODO: try first without proxy, and then with, if param useProxy not set
-	// API
-	A.catalogFromURL = function(url, options, successCallback, useProxy) {
-		var catalog = A.catalog(options);
-		// TODO: should be self-contained in Catalog class
-		cds.Catalog.parseVOTable(url, function(sources) {
-				catalog.addSources(sources);
-				if (successCallback) {
-					successCallback(sources);
-				}
-			},
-			catalog.maxNbSources, useProxy,
-			catalog.raField, catalog.decField
-		);
-
-		return catalog;
-	};
+	static AVAILABLE_CALLBACKS = ['select', 'objectClicked', 'objectHovered', 'footprintClicked', 'footprintHovered', 'positionChanged', 'zoomChanged', 'click', 'mouseMove', 'fullScreenToggled']
 
 	// API
-	// @param target: can be either a string representing a position or an object name, or can be an object with keys 'ra' and 'dec' (values being in decimal degrees)
-	A.catalogFromSimbad = function(target, radius, options, successCallback) {
-		options = options || {};
-		if (! ('name' in options)) {
-			options['name'] = 'Simbad';
-		}
-		var url = URLBuilder.buildSimbadCSURL(target, radius);
-		return A.catalogFromURL(url, options, successCallback, false);
-	};
+	//
+	// setting callbacks
+	on(what, myFunction) {
+		if (Aladin.AVAILABLE_CALLBACKS.indexOf(what)<0) return
+		this.callbacksByEventName[what] = myFunction
+	}
 
-	// API
-	A.catalogFromNED = function(target, radius, options, successCallback) {
-		options = options || {};
-		if (! ('name' in options)) options['name'] = 'NED';
-		var url;
-		if (target && (typeof target  === "object")) {
-			if ('ra' in target && 'dec' in target) url = URLBuilder.buildNEDPositionCSURL(target.ra, target.dec, radius);
-		}
-		else {
-			var isObjectName = /[a-zA-Z]/.test(target);
-			if (isObjectName) url = URLBuilder.buildNEDObjectCSURL(target, radius);
-			else {
-				var coo = new Coo();
-				coo.parse(target);
-				url = URLBuilder.buildNEDPositionCSURL(coo.lon, coo.lat, radius);
-			}
-		}
+	select() { this.fire('selectstart') }
 
-		return A.catalogFromURL(url, options, successCallback);
-	};
-
-	// API
-	A.catalogFromVizieR = function(vizCatId, target, radius, options, successCallback) {
-		options = options || {};
-		if (! ('name' in options)) options['name'] = 'VizieR:' + vizCatId;
-		var url = URLBuilder.buildVizieRCSURL(vizCatId, target, radius, options);
-		return A.catalogFromURL(url, options, successCallback, false);
-	};
-
-	// API
-	A.catalogFromSkyBot = function(ra, dec, radius, epoch, queryOptions, options, successCallback) {
-		queryOptions = queryOptions || {};
-		options = options || {};
-		if (! ('name' in options)) options['name'] = 'SkyBot';
-		var url = URLBuilder.buildSkyBotCSURL(ra, dec, radius, epoch, queryOptions);
-		return A.catalogFromURL(url, options, successCallback, false);
-	};
-
-	 Aladin.AVAILABLE_CALLBACKS = ['select', 'objectClicked', 'objectHovered', 'footprintClicked', 'footprintHovered', 'positionChanged', 'zoomChanged', 'click', 'mouseMove', 'fullScreenToggled'];
-	 // API
-	 //
-	 // setting callbacks
-	 Aladin.prototype.on = function(what, myFunction) {
-		 if (Aladin.AVAILABLE_CALLBACKS.indexOf(what)<0) return;
-		 this.callbacksByEventName[what] = myFunction;
-	 };
-
-	 Aladin.prototype.select = function() {
-		 this.fire('selectstart');
-	 };
-
-	 Aladin.prototype.fire = function(what, params) {
-		 if (what==='selectstart') this.view.setMode(View.SELECT);
-		 else if (what==='selectend') {
+	fire(what, params) {
+		if (what==='selectstart') this.view.setMode(View.SELECT);
+		else if (what==='selectend') {
 			this.view.setMode(View.PAN);
 			var callbackFn = this.callbacksByEventName['select'];
 			(typeof callbackFn === 'function') && callbackFn(params);
-		 }
-	 };
+		}
+	}
 
-	Aladin.prototype.hideBoxes = function() {
+	hideBoxes() {
 		if (this.boxes) {
 			for (var k=0; k<this.boxes.length; k++) {
 				this.boxes[k].hide();
 			}
 		}
-	};
+	}
 
 	// ?
-	Aladin.prototype.updateCM = function() {
-
-	};
+	updateCM() {}
 
 	// TODO : LayerBox (or Stack?) must be extracted as a separate object
-	Aladin.prototype.showLayerBox = function() {
+	showLayerBox() {
 		var self = this;
 
 		// first, update
@@ -1132,7 +1001,7 @@ Aladin = (function() {
 
 	};
 
-	Aladin.prototype.layerByName = function(name) {
+	layerByName(name) {
 		var c = this.view.allOverlayLayers;
 		for (var k=0; k<c.length; k++) {
 			if (name==c[k].name) {
@@ -1143,7 +1012,7 @@ Aladin = (function() {
 	};
 
 	// TODO : integrate somehow into API ?
-	Aladin.prototype.exportAsPNG = function(imgFormat) {
+	exportAsPNG(imgFormat) {
 		var w = window.open();
 		w.document.write('<img src="' + this.getViewDataURL() + '">');
 		w.document.title = 'Aladin Lite snapshot';
@@ -1159,7 +1028,7 @@ Aladin = (function() {
 	 *
 	 * @API
 	*/
-	Aladin.prototype.getViewDataURL = function(options) {
+	getViewDataURL(options) {
 		var options = options || {};
 		// support for old API signature
 		if (typeof options !== 'object') {
@@ -1175,7 +1044,7 @@ Aladin = (function() {
 	 *
 	 * @API
 	*/
-	Aladin.prototype.getViewWCS = function(options) {
+	getViewWCS(options) {
 		var raDec = this.getRaDec();
 		var fov   = this.getFov();
 		// TODO: support for other projection methods than SIN
@@ -1202,7 +1071,7 @@ Aladin = (function() {
 	 * @param minFOV in degrees when zoom in at max
 	 * @param maxFOV in degreen when zoom out at max
 	 */
-	Aladin.prototype.setFovRange = Aladin.prototype.setFOVRange = function(minFOV, maxFOV) {
+	setFOVRange(minFOV, maxFOV) {
 		if (minFOV>maxFOV) {
 			var tmp = minFOV;
 			minFOV = maxFOV;
@@ -1211,8 +1080,8 @@ Aladin = (function() {
 
 		this.view.minFOV = minFOV;
 		this.view.maxFOV = maxFOV;
-
-	};
+	}
+	setFovRange(minFOV, maxFOV){ return this.setFOVRange(minFOV, maxFOV) }
 
 	/**
 	 * Transform pixel coordinates to world coordinates
@@ -1227,7 +1096,7 @@ Aladin = (function() {
 	 * @return a [ra, dec] array with world coordinates in degrees. Returns undefined is something went wrong
 	 *
 	 */
-	Aladin.prototype.pix2world = function(x, y) {
+	pix2world(x, y) {
 		// this might happen at early stage of initialization
 		if (!this.view) return undefined;
 
@@ -1246,7 +1115,7 @@ Aladin = (function() {
 		else                                      res = [radec.ra, radec.dec];
 
 		return res;
-	};
+	}
 
 	/**
 	 * Transform world coordinates to pixel coordinates in the view
@@ -1259,7 +1128,7 @@ Aladin = (function() {
 	 * @return a [x, y] array with pixel coordinates in the view. Returns null if the projection failed somehow
 	 *
 	 */
-	Aladin.prototype.world2pix = function(ra, dec) {
+	world2pix(ra, dec) {
 		// this might happen at early stage of initialization
 		if (!this.view) return;
 
@@ -1286,7 +1155,7 @@ Aladin = (function() {
 	 * @return set of points along the current FoV with the following format: [[ra1, dec1], [ra2, dec2], ..., [ra_n, dec_n]]
 	 *
 	 */
-	Aladin.prototype.getFovCorners = function(nbSteps) {
+	getFovCorners(nbSteps) {
 		// default value: 1
 		if (!nbSteps || nbSteps<1) nbSteps = 1;
 		var points = [];
@@ -1308,7 +1177,7 @@ Aladin = (function() {
 	 *
 	 * @return the current FoV size in degrees as a 2-elements array
 	 */
-	Aladin.prototype.getFov = function() {
+	getFov() {
 		var fovX = this.view.fov;
 		var s = this.getSize();
 		var fovY = s[1] / s[0] * fovX;
@@ -1324,7 +1193,7 @@ Aladin = (function() {
 	 *
 	 * @return the size in pixels of the Aladin Lite view
 	 */
-	Aladin.prototype.getSize = function() {
+	getSize() {
 		return [this.view.width, this.view.height];
 	};
 
@@ -1333,12 +1202,153 @@ Aladin = (function() {
 	 *
 	 * @return the jQuery object representing the DIV element where the Aladin Lite instance lies
 	 */
-	Aladin.prototype.getParentDiv = function() {
-		return $(this.aladinDiv);
+	getParentDiv() { return $(this.aladinDiv) }
+
+
+
+
+	// @API
+	/*
+	 * return a Box GUI element to insert content
+	 */
+	box(options) {
+		var box = new Box(options)
+		box.$parentDiv.appendTo(this.aladinDiv)
+		return box
+	}
+
+	// @API
+	/*
+	 * show popup at ra, dec position with given title and content
+	 */
+	showPopup(ra, dec, title, content) {
+		this.view.catalogForPopup.removeAll();
+		var marker = A.marker(ra, dec, {popupTitle: title, popupDesc: content, useMarkerDefaultIcon: false});
+		this.view.catalogForPopup.addSources(marker);
+		this.view.catalogForPopup.show();
+
+		this.view.popup.setTitle(title);
+		this.view.popup.setText(content);
+		this.view.popup.setSource(marker);
+		this.view.popup.show();
+	}
+
+	// @API
+	/*
+	 * hide popup
+	 */
+	hidePopup() { this.view.popup.hide() }
+
+	// @API
+	/*
+	 * return a URL allowing to share the current view
+	 */
+	getShareURL() {
+		var radec = this.getRaDec();
+		var coo = new Coo();
+		coo.prec = 7;
+		coo.lon = radec[0];
+		coo.lat = radec[1];
+		return `http://aladin.unistra.fr/AladinLite/?target=${encodeURIComponent(coo.format('s'))}&fov=${this.getFov()[0].toFixed(2)}&survey=${encodeURIComponent(this.getBaseImageLayer().id || this.getBaseImageLayer().rootUrl)}`;
+	}
+
+	// @API
+	/*
+	 * return, as a string, the HTML embed code
+	 */
+	getEmbedCode() {
+		var radec = this.getRaDec();
+		var coo = new Coo();
+		coo.prec = 7;
+		coo.lon = radec[0];
+		coo.lat = radec[1];
+
+		var survey = this.getBaseImageLayer().id;
+		var fov = this.getFov()[0];
+		var s = '';
+		s += '<link rel="stylesheet" href="http://aladin.unistra.fr/AladinLite/api/v2/latest/aladin.min.css" />\n';
+		s += '<script type="text/javascript" src="//code.jquery.com/jquery-1.9.1.min.js" charset="utf-8"></script>\n';
+		s += '<div id="aladin-lite-div" style="width:400px;height:400px;"></div>\n';
+		s += '<script type="text/javascript" src="http://aladin.unistra.fr/AladinLite/api/v2/latest/aladin.min.js" charset="utf-8"></script>\n';
+		s += '<script type="text/javascript">\n';
+		s += 'var aladin = A.aladin("#aladin-lite-div", {survey: "' + survey + 'P/DSS2/color", fov: ' + fov.toFixed(2) + ', target: "' + coo.format('s') + '"});\n';
+		s += '</script>';
+		return s;
+	}
+
+	// @API
+	/*
+	 * Creates remotely a HiPS from a FITS image URL and displays it
+	 */
+	displayFITS(url, options, successCallback, errorCallback) {
+		options = options || {};
+		var data = {url: url};
+		if (options.color) {
+			data.color = true;
+		}
+		if (options.outputFormat) {
+			data.format = options.outputFormat;
+		}
+		if (options.order) {
+			data.order = options.order;
+		}
+		if (options.nocache) {
+			data.nocache = options.nocache;
+		}
+		var self = this;
+		$.ajax({
+			url: 'https://alasky.unistra.fr/cgi/fits2HiPS',
+			data: data,
+			method: 'GET',
+			dataType: 'json',
+			success: function(response) {
+				if (response.status!='success') {
+					console.error('An error occured: ' + response.message);
+					if (errorCallback) {
+						errorCallback(response.message);
+					}
+					return;
+				}
+				var label = options.label || "FITS image";
+				var meta = response.data.meta;
+				self.setOverlayImageLayer(self.createImageSurvey(label, label, response.data.url, "equatorial", meta.max_norder, {imgFormat: 'png'}));
+				var transparency = (options && options.transparency) || 1.0;
+				self.getOverlayImageLayer().setAlpha(transparency);
+
+				var executeDefaultSuccessAction = true;
+				if (successCallback) {
+					executeDefaultSuccessAction = successCallback(meta.ra, meta.dec, meta.fov);
+				}
+				if (executeDefaultSuccessAction===true) {
+					self.gotoRaDec(meta.ra, meta.dec);
+					self.setFoV(meta.fov);
+				}
+
+			}
+		})
+	}
+
+	// @API
+	/*
+	 * Creates remotely a HiPS from a JPEG or PNG image with astrometry info
+	 * and display it
+	 */
+	displayPNG(url, options, successCallback, errorCallback) {
+		options = options || {};
+		options.color = true;
+		options.label = "JPG/PNG image";
+		options.outputFormat = 'png';
+		this.displayFITS(url, options, successCallback, errorCallback);
 	};
 
-	return Aladin;
-})();
+	displayJPG(url, options, successCallback, errorCallback) { return this.displayPNG(url, options, successCallback, errorCallback) }
+
+	setReduceDeformations(reduce) {
+		this.reduceDeformations = reduce;
+		this.view.requestRedraw();
+	}
+
+}
 
 //// New API ////
 // For developers using Aladin lite: all objects should be created through the API,
@@ -1405,150 +1415,6 @@ A.catalogHiPS = function(rootURL, options) {
 	return new ProgressiveCat(rootURL, null, null, options);
 };
 
-// @API
-/*
- * return a Box GUI element to insert content
- */
-Aladin.prototype.box = function(options) {
-	var box = new Box(options);
-	box.$parentDiv.appendTo(this.aladinDiv);
-
-	return box;
-};
-
-// @API
-/*
- * show popup at ra, dec position with given title and content
- */
-Aladin.prototype.showPopup = function(ra, dec, title, content) {
-	this.view.catalogForPopup.removeAll();
-	var marker = A.marker(ra, dec, {popupTitle: title, popupDesc: content, useMarkerDefaultIcon: false});
-	this.view.catalogForPopup.addSources(marker);
-	this.view.catalogForPopup.show();
-
-	this.view.popup.setTitle(title);
-	this.view.popup.setText(content);
-	this.view.popup.setSource(marker);
-	this.view.popup.show();
-};
-
-// @API
-/*
- * hide popup
- */
-Aladin.prototype.hidePopup = function() {
-	this.view.popup.hide();
-};
-
-// @API
-/*
- * return a URL allowing to share the current view
- */
-Aladin.prototype.getShareURL = function() {
-	var radec = this.getRaDec();
-	var coo = new Coo();
-	coo.prec = 7;
-	coo.lon = radec[0];
-	coo.lat = radec[1];
-
-	return `http://aladin.unistra.fr/AladinLite/?target=${encodeURIComponent(coo.format('s'))}&fov=${this.getFov()[0].toFixed(2)}&survey=${encodeURIComponent(this.getBaseImageLayer().id || this.getBaseImageLayer().rootUrl)}`;
-};
-
-// @API
-/*
- * return, as a string, the HTML embed code
- */
-Aladin.prototype.getEmbedCode = function() {
-	var radec = this.getRaDec();
-	var coo = new Coo();
-	coo.prec = 7;
-	coo.lon = radec[0];
-	coo.lat = radec[1];
-
-	var survey = this.getBaseImageLayer().id;
-	var fov = this.getFov()[0];
-	var s = '';
-	s += '<link rel="stylesheet" href="http://aladin.unistra.fr/AladinLite/api/v2/latest/aladin.min.css" />\n';
-	s += '<script type="text/javascript" src="//code.jquery.com/jquery-1.9.1.min.js" charset="utf-8"></script>\n';
-	s += '<div id="aladin-lite-div" style="width:400px;height:400px;"></div>\n';
-	s += '<script type="text/javascript" src="http://aladin.unistra.fr/AladinLite/api/v2/latest/aladin.min.js" charset="utf-8"></script>\n';
-	s += '<script type="text/javascript">\n';
-	s += 'var aladin = A.aladin("#aladin-lite-div", {survey: "' + survey + 'P/DSS2/color", fov: ' + fov.toFixed(2) + ', target: "' + coo.format('s') + '"});\n';
-	s += '</script>';
-	return s;
-};
-
-// @API
-/*
- * Creates remotely a HiPS from a FITS image URL and displays it
- */
-Aladin.prototype.displayFITS = function(url, options, successCallback, errorCallback) {
-	options = options || {};
-	var data = {url: url};
-	if (options.color) {
-		data.color = true;
-	}
-	if (options.outputFormat) {
-		data.format = options.outputFormat;
-	}
-	if (options.order) {
-		data.order = options.order;
-	}
-	if (options.nocache) {
-		data.nocache = options.nocache;
-	}
-	var self = this;
-	$.ajax({
-		url: 'https://alasky.unistra.fr/cgi/fits2HiPS',
-		data: data,
-		method: 'GET',
-		dataType: 'json',
-		success: function(response) {
-			if (response.status!='success') {
-				console.error('An error occured: ' + response.message);
-				if (errorCallback) {
-					errorCallback(response.message);
-				}
-				return;
-			}
-			var label = options.label || "FITS image";
-			var meta = response.data.meta;
-			self.setOverlayImageLayer(self.createImageSurvey(label, label, response.data.url, "equatorial", meta.max_norder, {imgFormat: 'png'}));
-			var transparency = (options && options.transparency) || 1.0;
-			self.getOverlayImageLayer().setAlpha(transparency);
-
-			var executeDefaultSuccessAction = true;
-			if (successCallback) {
-				executeDefaultSuccessAction = successCallback(meta.ra, meta.dec, meta.fov);
-			}
-			if (executeDefaultSuccessAction===true) {
-				self.gotoRaDec(meta.ra, meta.dec);
-				self.setFoV(meta.fov);
-			}
-
-		}
-	});
-
-};
-
-// @API
-/*
- * Creates remotely a HiPS from a JPEG or PNG image with astrometry info
- * and display it
- */
-Aladin.prototype.displayJPG = Aladin.prototype.displayPNG = function(url, options, successCallback, errorCallback) {
-	options = options || {};
-	options.color = true;
-	options.label = "JPG/PNG image";
-	options.outputFormat = 'png';
-	this.displayFITS(url, options, successCallback, errorCallback);
-};
-
-Aladin.prototype.setReduceDeformations = function(reduce) {
-	this.reduceDeformations = reduce;
-	this.view.requestRedraw();
-}
-
 // conservé pour compatibilité avec existant
 // @oldAPI
 if ($) {
@@ -1556,3 +1422,98 @@ if ($) {
 }
 
 // TODO: callback function onAladinLiteReady
+
+
+
+
+// API
+A.footprintsFromSTCS = function(stcs) {
+	var footprints = Overlay.parseSTCS(stcs);
+	return footprints;
+}
+
+// API
+A.MOCFromURL = function(url, options, successCallback) {
+	var moc = new MOC(options);
+	moc.dataFromFITSURL(url, successCallback);
+	return moc;
+};
+
+// API
+A.MOCFromJSON = function(jsonMOC, options) {
+	var moc = new MOC(options);
+	moc.dataFromJSON(jsonMOC);
+	return moc;
+};
+
+// @oldAPI
+Aladin.prototype.createCatalogFromVOTable = function(url, options) {
+	return A.catalogFromURL(url, options);
+};
+
+// TODO: try first without proxy, and then with, if param useProxy not set
+// API
+A.catalogFromURL = function(url, options, successCallback, useProxy) {
+	var catalog = A.catalog(options);
+	// TODO: should be self-contained in Catalog class
+	cds.Catalog.parseVOTable(url, function(sources) {
+			catalog.addSources(sources);
+			if (successCallback) {
+				successCallback(sources);
+			}
+		},
+		catalog.maxNbSources, useProxy,
+		catalog.raField, catalog.decField
+	);
+
+	return catalog;
+};
+
+// API
+// @param target: can be either a string representing a position or an object name, or can be an object with keys 'ra' and 'dec' (values being in decimal degrees)
+A.catalogFromSimbad = function(target, radius, options, successCallback) {
+	options = options || {};
+	if (! ('name' in options)) {
+		options['name'] = 'Simbad';
+	}
+	var url = URLBuilder.buildSimbadCSURL(target, radius);
+	return A.catalogFromURL(url, options, successCallback, false);
+};
+
+// API
+A.catalogFromNED = function(target, radius, options, successCallback) {
+	options = options || {};
+	if (! ('name' in options)) options['name'] = 'NED';
+	var url;
+	if (target && (typeof target  === "object")) {
+		if ('ra' in target && 'dec' in target) url = URLBuilder.buildNEDPositionCSURL(target.ra, target.dec, radius);
+	}
+	else {
+		var isObjectName = /[a-zA-Z]/.test(target);
+		if (isObjectName) url = URLBuilder.buildNEDObjectCSURL(target, radius);
+		else {
+			var coo = new Coo();
+			coo.parse(target);
+			url = URLBuilder.buildNEDPositionCSURL(coo.lon, coo.lat, radius);
+		}
+	}
+
+	return A.catalogFromURL(url, options, successCallback);
+};
+
+// API
+A.catalogFromVizieR = function(vizCatId, target, radius, options, successCallback) {
+	options = options || {};
+	if (! ('name' in options)) options['name'] = 'VizieR:' + vizCatId;
+	var url = URLBuilder.buildVizieRCSURL(vizCatId, target, radius, options);
+	return A.catalogFromURL(url, options, successCallback, false);
+};
+
+// API
+A.catalogFromSkyBot = function(ra, dec, radius, epoch, queryOptions, options, successCallback) {
+	queryOptions = queryOptions || {};
+	options = options || {};
+	if (! ('name' in options)) options['name'] = 'SkyBot';
+	var url = URLBuilder.buildSkyBotCSURL(ra, dec, radius, epoch, queryOptions);
+	return A.catalogFromURL(url, options, successCallback, false);
+};
