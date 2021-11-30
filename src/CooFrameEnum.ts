@@ -18,11 +18,11 @@ export class CooFrameEnum {
 	static J2000d = new CooFrameEnumType('J2000d', systems.J2000)
 	static GAL =    new CooFrameEnumType('Galactic', systems.GAL)
 	static fromString(str: string|null|undefined, defaultValue: CooFrameEnumType|undefined = undefined) {
-		if (!str)  return defaultValue ? defaultValue : null;
+		if (!str) return defaultValue
 		str = str.toLowerCase().replace(/^\s+|\s+$/g, ''); // convert to lowercase and trim
 		     if (str.indexOf('j2000d')==0 || str.indexOf('icrsd')==0)return CooFrameEnum.J2000d;
 		else if (str.indexOf('j2000' )==0 || str.indexOf('icrs')==0) return CooFrameEnum.J2000;
 		else if (str.indexOf('gal')==0)                              return CooFrameEnum.GAL;
-		else                                                         return defaultValue ? defaultValue : null;
+		else                                                         return defaultValue
 	}
 }
