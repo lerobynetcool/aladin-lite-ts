@@ -41,7 +41,8 @@ let RAP=0.7
 /** Returns true if the HEALPix rhomb described by its 4 corners (array c)
  * is too large to be drawn in one pass ==> need to be subdivided */
 function isTooLarge(c) {
-	let d1,d2
+	let d1
+	let d2
 	if ( (d1=dist(c,0,2))>M || (d2=dist(c,2,1))>M ) return true
 	if ( d1==0 || d2==0 ) throw "Rhomb error"
 	let diag1 = dist(c,0,3)
@@ -214,7 +215,7 @@ class HpxKey {
 			cornersXY[k] = view.projection.project(lon, lat)
 		}
 
-		if (cornersXY[0] == null ||  cornersXY[1] == null  ||  cornersXY[2] == null ||  cornersXY[3] == null ) return null
+		if (cornersXY[0] == null || cornersXY[1] == null || cornersXY[2] == null || cornersXY[3] == null ) return null
 
 		for (let k=0; k<4; k++) {
 			cornersXYView[k] = AladinUtils.xyToView(cornersXY[k].X, cornersXY[k].Y, view.width, view.height, view.largestDim, view.zoomFactor)
