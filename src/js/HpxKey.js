@@ -75,7 +75,7 @@ class HpxKey {
 
 		this.parente = 0 // if this key comes from an ancestor, length of the filiation
 
-		this.children = null
+		this.children = []
 		this.ancestor = null // ancestor having the pixels
 	}
 
@@ -88,7 +88,8 @@ class HpxKey {
 			father.width/2,
 			father.height/2,
 			childNb==2 || childNb==3 ? father.dx+father.width/2 : father.dx, childNb==1 || childNb==3 ? father.dy+father.height/2 : father.dy,
-			father.allskyTexture, father.allskyTextureSize)
+			father.allskyTexture,
+			father.allskyTextureSize)
 		hpxKey.parente = father.parente + 1
 		hpxKey.ancestor = father.ancestor || father
 
@@ -109,20 +110,14 @@ class HpxKey {
 			if (isTooLarge(corners)) {
 				//console.log('too large')
 				let m = this.drawChildren(ctx, view, MAX_PARENTE)
-
-				// Si aucun sous-losange n'a pu être dessiné, je trace tout de même le père
-				if( m>0 ) {
-					return m
-				}
+				if ( m>0 ) return m // Si aucun sous-losange n'a pu être dessiné, je trace tout de même le père
 			}
 		}
-		catch(e) {
-			return 0
-		}
+		catch(e) { return 0 }
 
 		// actual drawing
 		let norder = this.ancestor==null ? this.norder : this.ancestor.norder
-		let npix = this.ancestor==null ? this.npix : this.ancestor.npix
+		let npix   = this.ancestor==null ? this.npix : this.ancestor.npix
 
 		//console.log(corners)
 		//corners = AladinUtils.grow2(corners, 1) // grow by 1 pixel in each direction
@@ -130,11 +125,11 @@ class HpxKey {
 		let url = this.hips.getTileURL(norder, npix)
 		let tile = this.hips.tileBuffer.getTile(url)
 		if (tile && Tile.isImageOk(tile.img) || this.allskyTexture) {
-			if (!this.allskyTexture && !this.hips.tileSize) {
-				this.hips.tileSize = tile.img.width
+			if (!this.allskyTexture) {
+				this.hips.tileSize = this.hips.tileSize || tile.img.width
 			}
 			let img = this.allskyTexture || tile.img
-			let w = this.allskyTextureSize || img.width
+			let w   = this.allskyTextureSize || img.width
 			if (this.parente) {
 				w = w / Math.pow(2, this.parente)
 			}
@@ -153,34 +148,21 @@ class HpxKey {
 	}
 
 	drawChildren(ctx, view, maxParente) {
-		let n=0
 		let limitOrder = 13 // corresponds to NSIDE=8192, current HealpixJS limit
-		if ( this.width>1 && this.norder<limitOrder && this.parente<maxParente ) {
-			let children = this.getChildren()
-			if ( children!=null ) {
-				for (let i=0; i<4; i++) {
-					//console.log(i)
-					if ( children[i]!=null ) {
-						n += children[i].draw(ctx , view, maxParente)
-					}
-				}
-			}
+		if ( 1<this.width && this.norder<limitOrder && this.parente<maxParente ) {
+			return this.getChildren().map( c => c.draw(ctx , view, maxParente) ).reduce((a,b)=>a+b)
 		}
-
-		return n
+		return 0
 	}
 
 	// returns the 4 HpxKey children
 	getChildren() {
-		if (this.children!=null) return this.children
+		if (this.children.length == 4) return this.children
 
-		let children = []
+		this.children = []
 		for (let childNb=0; childNb<4; childNb++) {
-			let child = HpxKey.createHpxKeyfromAncestor(this, childNb)
-			children[childNb] = child
+			this.children[childNb] = HpxKey.createHpxKeyfromAncestor(this, childNb)
 		}
-		this.children = children
-
 		return this.children
 	}
 
@@ -189,9 +171,10 @@ class HpxKey {
 		let cornersXYView = []
 		let spVec = new SpatialVector()
 
-		corners = HealpixCache.corners_nest(this.npix, this.nside)
+		let corners = HealpixCache.corners_nest(this.npix, this.nside)
 
-		let lon, lat
+		let lon
+		let lat
 		for (let k=0; k<4; k++) {
 			spVec.setXYZ(corners[k].x, corners[k].y, corners[k].z)
 
