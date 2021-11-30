@@ -40,7 +40,7 @@ function getChevronClass(position: cssDirection, isOpen: boolean): string {
 	return ''
 }
 
-type BoxOptions = {
+export type BoxOptions = {
 	// css?: {[key: string]: string},
 	// contentCss?: {[key: string]: string},
 	showHandler?: boolean

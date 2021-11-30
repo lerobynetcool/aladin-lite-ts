@@ -27,15 +27,17 @@
  *****************************************************************************/
 
 import { Catalog } from './Catalog'
+import { Popup } from './Popup'
 
 export class Source {
 	ra: number
 	dec: number
-	data
+	data: {[key:string]: string} // TODO : maybe it's not pointing to string... to be clarified
 	catalog: Catalog|null = null // TODO : get rid of null with a default catalog
 	marker: boolean
 	isShowing = true
 	isSelected = false
+	popup?: Popup
 	popupTitle
 	popupDesc
 	useMarkerDefaultIcon
@@ -90,7 +92,7 @@ export class Source {
 			let m = '<div class="aladin-marker-measurement">'
 			m += '<table>'
 			for (let key in source.data) {
-				m += `<tr><td>${key}</td><td>${(source.data as any)[key]}</td></tr>`
+				m += `<tr><td>${key}</td><td>${source.data[key]}</td></tr>`
 			}
 			m += '</table>'
 			m += '</div>'

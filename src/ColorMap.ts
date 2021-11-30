@@ -186,7 +186,7 @@ export class ColorMap {
 		this.view.requestRedraw()
 	}
 
-	apply(img: HTMLCanvasElement): HTMLCanvasElement {
+	apply(img: HTMLCanvasElement|HTMLImageElement): HTMLCanvasElement|HTMLImageElement {
 		if (this.sig=='native') return img
 		if (this.sig==(img as any).cmSig) return (img as any).cmImg // return cached pixels
 		let canvas: HTMLCanvasElement = document.createElement("canvas")
