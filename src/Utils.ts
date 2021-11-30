@@ -18,20 +18,20 @@
 //
 
 /******************************************************************************
- * Aladin Lite project
- * 
- * File Utils
- * 
- * Author: Thomas Boch[CDS]
- * 
- *****************************************************************************/
+* Aladin Lite project
+*
+* File Utils
+*
+* Author: Thomas Boch[CDS]
+*
+*****************************************************************************/
 
 import {Aladin} from './Aladin'
 
 // $ = $ || jQuery
 
 // TODO : utiliser le LRU cache pour les tuiles images
-class LRUCache<T> {
+export class LRUCache<T> {
 	content: { [name: string]: [T,number] } = {}
 	maxsize
 	constructor(maxsize=1024) { this.maxsize = maxsize }
@@ -55,7 +55,7 @@ class LRUCache<T> {
 export function relMouseCoords(self: HTMLCanvasElement, event: MouseEvent) {
 	if (event.offsetX) return {x: event.offsetX, y:event.offsetY}
 	else {
- 		let e = event
+		let e = event
 		// http://www.jacklmoore.com/notes/mouse-position/
 		let target = (e.target || e.srcElement) as EventTarget // assume cannot be null
 		let style = (target as any).currentStyle || window.getComputedStyle(target as any, null)
@@ -84,10 +84,10 @@ export class Utils {
 		if(Utils.__cssScale === undefined) {
 			let st = window.getComputedStyle(document.body, null)
 			let tr = st.getPropertyValue("transform") ||
-					st.getPropertyValue("-webkit-transform") ||
-					st.getPropertyValue("-moz-transform") ||
-					st.getPropertyValue("-ms-transform") ||
-					st.getPropertyValue("-o-transform")
+			st.getPropertyValue("-webkit-transform") ||
+			st.getPropertyValue("-moz-transform") ||
+			st.getPropertyValue("-ms-transform") ||
+			st.getPropertyValue("-o-transform")
 			let matrixRegex = /matrix\((-?\d*\.?\d+),\s*0,\s*0,\s*(-?\d*\.?\d+),\s*0,\s*0\)/
 			let matches = tr.match(matrixRegex)
 			Utils.__cssScale = matches ? parseFloat(matches[1]) : 1
@@ -103,7 +103,7 @@ export class Utils {
 	static isNumber(n: any) { return !isNaN(parseFloat(n)) && isFinite(n) }
 
 	static isInt(n: any) { return Utils.isNumber(n) && Math.floor(n)==n }
-	
+
 	/* a debounce function, used to prevent multiple calls to the same function if less than delay milliseconds have passed */
 	static debounce(fn: Function, delay: number) {
 		let timer: NodeJS.Timeout
@@ -142,7 +142,7 @@ export class Utils {
 	 * Make an AJAX call, given a list of potential mirrors
 	 * First successful call will result in options.onSuccess being called back
 	 * If all calls fail, onFailure is called back at the end
-	 * 
+	 *
 	 * This method assumes the URL are CORS-compatible, no proxy will be used
 	 */
 	static loadFromMirrors(urls: string[], options: any) {
@@ -162,10 +162,10 @@ export class Utils {
 				ajaxOptions.dataType = dataType
 			}
 			$.ajax(ajaxOptions)
-				.done( (data) => onSuccess(data) )
-				.fail( () => Utils.loadFromMirrors(urls.slice(1), options) )
+			.done( (data) => onSuccess(data) )
+			.fail( () => Utils.loadFromMirrors(urls.slice(1), options) )
 		}
-	} 
+	}
 
 	// return the jquery ajax object configured with the requested parameters
 	// by default, we use the proxy (safer, as we don't know if the remote server supports CORS)
@@ -197,4 +197,8 @@ export class Utils {
 			return v.toString(16)
 		})
 	}
+
+	static radecToPolar(ra: number, dec: number){ return { theta: Math.PI/2-dec/180*Math.PI, phi: ra/180*Math.PI } }
+	static polarToRadec(t: number, s: number){ return {ra:180*s/Math.PI,dec:180*(Math.PI/2-t)/Math.PI}}
+	static castToInt(t: number){return t>0?Math.floor(t):Math.ceil(t)}
 }
