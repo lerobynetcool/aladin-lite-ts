@@ -26,52 +26,43 @@
  *
  *****************************************************************************/
 
+import { HealpixIndex } from './Healpix'
+
 // class holding some HEALPix computations for better performances
 //
 // it is made of :
 // - a static cache for HEALPix corners at nside=8
 // - a dynamic cache for
+export class HealpixCache {
 
-class HealpixCache {
+	static staticCache = {corners: {nside8: new Array<any>()}}
 
-	static staticCache = {corners: {nside8: []}}
 	// TODO : utilisation du dynamicCache
 	static dynamicCache = {}
-
 	static lastNside = 8
-
-	static hpxIdxCache = null
+	static hpxIdxCache: HealpixIndex
 
 	// TODO : conserver en cache le dernier résultat ?
 
 	static init() {
 		// pre-compute corners position for nside=8
-		var hpxIdx = new HealpixIndex(8)
-		hpxIdx.init()
-		var npix = HealpixIndex.nside2Npix(8)
-		var corners
-		for (var ipix=0; ipix<npix; ipix++) {
-			corners =  hpxIdx.corners_nest(ipix, 1)
+		let hpxIdx = new HealpixIndex(8)
+		let npix = HealpixIndex.nside2Npix(8)
+		for (let ipix=0; ipix<npix; ipix++) {
+			let corners = hpxIdx.corners_nest(ipix, 1)
 			HealpixCache.staticCache.corners.nside8.push(corners)
 		}
-
 		HealpixCache.hpxIdxCache = hpxIdx
 	}
 
-	static corners_nest(ipix, nside) {
-		if (nside==8) {
-			return HealpixCache.staticCache.corners.nside8[ipix]
-		}
-
+	static corners_nest(ipix: number, nside: number) {
+		if (nside==8) return HealpixCache.staticCache.corners.nside8[ipix]
 		if (nside != HealpixCache.lastNside) {
 			HealpixCache.hpxIdxCache = new HealpixIndex(nside)
-			HealpixCache.hpxIdxCache.init()
 			HealpixCache.lastNside = nside
 		}
-
 		return HealpixCache.hpxIdxCache.corners_nest(ipix, 1)
 	}
-
 }
 
 HealpixCache.init()
