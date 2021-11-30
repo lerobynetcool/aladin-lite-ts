@@ -17,8 +17,6 @@
 //    along with Aladin Lite.
 //
 
-
-
 /******************************************************************************
  * Aladin Lite project
  *
@@ -28,8 +26,7 @@
  *
  *****************************************************************************/
 
-Popup = (function() {
-
+class Popup {
 
 	// constructor
 	Popup = function(parentDiv, view) {
@@ -41,47 +38,44 @@ Popup = (function() {
 		var self = this;
 		// close popup
 		this.domEl.find('.aladin-closeBtn').click(function() {self.hide();});
+	}
 
-	};
-
-	Popup.prototype.hide = function() {
+	hide() {
 		this.domEl.hide();
 
 		this.view.mustClearCatalog=true;
 		this.view.catalogForPopup.hide();
-	};
+	}
 
-	Popup.prototype.show = function() {
+	show() {
 		this.domEl.show();
-	};
+	}
 
-	Popup.prototype.setTitle = function(title) {
+	setTitle(title) {
 		this.domEl.find('.aladin-popupTitle').html(title || '');
-	};
+	}
 
-	Popup.prototype.setText = function(text) {
+	setText(text) {
 		this.domEl.find('.aladin-popupText').html(text || '');
 		this.w = this.domEl.outerWidth();
 		this.h = this.domEl.outerHeight();
-	};
+	}
 
-	Popup.prototype.setSource = function(source) {
+	setSource(source) {
 		// remove reference to popup for previous source
 		if (this.source) this.source.popup = null;
 		source.popup = this;
 		this.source = source;
 		this.setPosition(source.x, source.y);
-	};
+	}
 
-	Popup.prototype.setPosition = function(x, y) {
+	setPosition(x, y) {
 		var newX = x - this.w/2;
 		var newY = y - this.h;
 		if (this.source) newY += this.source.catalog.sourceSize/2;
 
 		this.domEl[0].style.left = newX + 'px';
 		this.domEl[0].style.top  = newY + 'px';
-	};
+	}
 
-	return Popup;
-})();
-
+}
