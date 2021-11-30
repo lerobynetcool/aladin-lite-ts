@@ -27,11 +27,23 @@
  *
  *****************************************************************************/
 
+import { AladinUtils } from './AladinUtils'
+import { CooConversion } from './CooConversion'
+import { CooFrameEnum } from './CooFrameEnum'
+import { View } from './View'
+import { TXY, Vxy } from './Basic'
+import { HealpixCache } from './HealpixCache'
+import { HpxImageSurvey } from './HpxImageSurvey'
+import { Tile } from './Tile'
+import { SpatialVector } from './Healpix'
+
+const MAX_PARENTE = 4
+
 /** Returns the squared distance for points in array c at indexes g and d */
-function dist(c, g, d) {
+function dist(c: Vxy[], g: number, d: number) {
 	let dx=c[g].vx-c[d].vx
 	let dy=c[g].vy-c[d].vy
-	return dx*dx + dy*dy
+	return  dx*dx + dy*dy
 }
 
 let M = 280*280
@@ -40,9 +52,9 @@ let RAP=0.7
 
 /** Returns true if the HEALPix rhomb described by its 4 corners (array c)
  * is too large to be drawn in one pass ==> need to be subdivided */
-function isTooLarge(c) {
-	let d1
-	let d2
+function isTooLarge(c: Vxy[]) {
+	let d1: number
+	let d2: number
 	if ( (d1=dist(c,0,2))>M || (d2=dist(c,2,1))>M ) return true
 	if ( d1==0 || d2==0 ) throw "Rhomb error"
 	let diag1 = dist(c,0,3)
@@ -52,10 +64,25 @@ function isTooLarge(c) {
 	return rap<RAP && (diag1>N || diag2>N)
 }
 
-let MAX_PARENTE = 4
+export class HpxKey {
 
-class HpxKey {
-	constructor(norder, npix, hips, width, height, dx, dy, allskyTexture, allskyTextureSize) {
+	parente = 0 // if this key comes from an ancestor, length of the filiation
+	children: HpxKey[] = []
+	ancestor: HpxKey | null = null // ancestor having the pixels
+
+	nside: number
+	width: number
+	height: number
+	dx: number
+	dy: number
+	norder: number
+	npix: number
+	hips: HpxImageSurvey
+	frame
+	allskyTexture?: HTMLImageElement
+	allskyTextureSize?: number
+
+	constructor(norder: number, npix: number, hips: HpxImageSurvey, width: number, height: number, dx = 0, dy = 0, allskyTexture?: HTMLImageElement, allskyTextureSize?: number) {
 		this.norder = norder
 		this.npix = npix
 
@@ -67,20 +94,14 @@ class HpxKey {
 		this.width = width // width of the tile
 		this.height = height // height of the tile
 
-		this.dx = dx || 0 // shift in x (for all-sky tiles)
-		this.dy = dy || 0 // shift in y (for all-sky tiles)
+		this.dx = dx // shift in x (for all-sky tiles)
+		this.dy = dy // shift in y (for all-sky tiles)
 
 		this.allskyTexture = allskyTexture
 		this.allskyTextureSize = allskyTextureSize
-
-		this.parente = 0 // if this key comes from an ancestor, length of the filiation
-
-		this.children = []
-		this.ancestor = null // ancestor having the pixels
 	}
 
-	// "static" methods
-	static createHpxKeyfromAncestor(father, childNb) {
+	static createHpxKeyfromAncestor(father: HpxKey, childNb: number): HpxKey {
 		let hpxKey = new HpxKey(
 			father.norder+1,
 			father.npix*4 + childNb,
@@ -96,7 +117,7 @@ class HpxKey {
 		return hpxKey
 	}
 
-	draw(ctx, view) {
+	draw(ctx: CanvasRenderingContext2D, view: View) {
 		//console.log('Drawing ', this.norder, this.npix)
 		let n = 0 // number of traced triangles
 		let corners = this.getProjViewCorners(view)
@@ -117,19 +138,19 @@ class HpxKey {
 
 		// actual drawing
 		let norder = this.ancestor==null ? this.norder : this.ancestor.norder
-		let npix   = this.ancestor==null ? this.npix : this.ancestor.npix
+		let npix   = this.ancestor==null ? this.npix   : this.ancestor.npix
 
 		//console.log(corners)
 		//corners = AladinUtils.grow2(corners, 1) // grow by 1 pixel in each direction
 		//console.log(corners)
 		let url = this.hips.getTileURL(norder, npix)
-		let tile = this.hips.tileBuffer.getTile(url)
+		let tile = this.hips.tileBuffer?.getTile(url)
 		if (tile && Tile.isImageOk(tile.img) || this.allskyTexture) {
 			if (!this.allskyTexture) {
-				this.hips.tileSize = this.hips.tileSize || tile.img.width
+				this.hips.tileSize = this.hips.tileSize || tile?.img.width
 			}
-			let img = this.allskyTexture || tile.img
-			let w   = this.allskyTextureSize || img.width
+			let img = (this.allskyTexture || tile?.img) as HTMLImageElement // TODO : can this be undefined ?
+			let w   = (this.allskyTextureSize || img?.width) as number      // TODO : can this be undefined ?
 			if (this.parente) {
 				w = w / Math.pow(2, this.parente)
 			}
@@ -138,8 +159,8 @@ class HpxKey {
 			n += 2
 		}
 		else if (updateNeededTiles && ! tile) {
-			tile = this.hips.tileBuffer.addTile(url)
-			view.downloader.requestDownload(tile.img, tile.url, this.hips.useCors)
+			let tile2 = this.hips.tileBuffer?.addTile(url) as Tile // TODO : can this be undefined ?
+			view.downloader.requestDownload(tile2.img, tile2.url, this.hips.useCors)
 			this.hips.lastUpdateDateNeededTiles = now
 			view.requestRedrawAtDate(now+HpxImageSurvey.UPDATE_NEEDED_TILES_DELAY+10)
 		}
@@ -147,17 +168,17 @@ class HpxKey {
 		return n
 	}
 
-	drawChildren(ctx, view, maxParente) {
+	drawChildren(ctx: CanvasRenderingContext2D, view: View, maxParente: number): number {
 		let limitOrder = 13 // corresponds to NSIDE=8192, current HealpixJS limit
 		if ( 1<this.width && this.norder<limitOrder && this.parente<maxParente ) {
-			return this.getChildren().map( c => c.draw(ctx , view, maxParente) ).reduce((a,b)=>a+b)
+			return this.getChildren().map( child => child.draw(ctx, view) ).reduce((a,b)=>a+b)
 		}
 		return 0
 	}
 
 	// returns the 4 HpxKey children
-	getChildren() {
-		if (this.children.length == 4) return this.children
+	getChildren(): HpxKey[] {
+		if (this.children.length == 4) return this.children // TODO : maybe a better way to check it was initialiized
 
 		this.children = []
 		for (let childNb=0; childNb<4; childNb++) {
@@ -166,16 +187,16 @@ class HpxKey {
 		return this.children
 	}
 
-	getProjViewCorners(view) {
-		let cornersXY = []
+	getProjViewCorners(view: View) {
+		let cornersXY: TXY[] = []
 		let cornersXYView = []
 		let spVec = new SpatialVector()
 
 		let corners = HealpixCache.corners_nest(this.npix, this.nside)
 
-		let lon
-		let lat
-		for (let k=0; k<4; k++) {
+		let lon = 0 // TODO : ts thinks `lon` could be undefined
+		let lat = 0 // TODO : ts thinks `lat` could be undefined
+		for(let k=0; k<4; k++) {
 			spVec.setXYZ(corners[k].x, corners[k].y, corners[k].z)
 
 			// need for frame transformation ?
@@ -195,16 +216,13 @@ class HpxKey {
 				lon = spVec.ra()
 				lat = spVec.dec()
 			}
-			cornersXY[k] = view.projection.project(lon, lat)
+			cornersXY[k] = view.projection.project(lon, lat) as TXY // TODO : could be null
 		}
 
 		if (cornersXY[0] == null || cornersXY[1] == null || cornersXY[2] == null || cornersXY[3] == null ) return null
 
-		for (let k=0; k<4; k++) {
-			cornersXYView[k] = AladinUtils.xyToView(cornersXY[k].X, cornersXY[k].Y, view.width, view.height, view.largestDim, view.zoomFactor)
-		}
+		for(let k=0; k<4; k++) cornersXYView[k] = AladinUtils.xyToView(cornersXY[k].X, cornersXY[k].Y, view.width, view.height, view.largestDim, view.zoomFactor)
 
 		return cornersXYView
 	}
-
 }
