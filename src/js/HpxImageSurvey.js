@@ -450,7 +450,7 @@ HpxImageSurvey = (function() {
 			}
 		}
 		// sort to draw lower norder first
-		parentTilesToDraw = parentTilesToDraw.sort(function(itemA, itemB) {
+		parentTilesToDraw.sort(function(itemA, itemB) {
 			return itemA.order - itemB.order;
 		});
 
@@ -564,7 +564,7 @@ HpxImageSurvey = (function() {
 		// tri des tuiles selon la distance
 		if (updateNeededTiles) {
 			var center = [(cornersXYViewMap[0][0].vx+cornersXYViewMap[0][1].vx)/2, (cornersXYViewMap[0][0].vy+cornersXYViewMap[0][1].vy)/2];
-			var newCornersXYViewMap = cornersXYViewMap.sort(function(a, b) {
+			cornersXYViewMap.sort(function(a, b) {
 				var cA = [(a[0].vx+a[2].vx)/2, (a[0].vy+a[2].vy)/2];
 				var cB = [(b[0].vx+b[2].vx)/2, (b[0].vy+b[2].vy)/2];
 
@@ -574,7 +574,6 @@ HpxImageSurvey = (function() {
 				return distA-distB;
 
 			});
-			cornersXYViewMap = newCornersXYViewMap;
 		}
 
 		for (var k=0, len=cornersXYViewMap.length; k<len; k++) {

@@ -375,7 +375,7 @@ Aladin = (function() {
 	};
 
 	Aladin.prototype.updateSurveysDropdownList = function(surveys) {
-		surveys = surveys.sort(function(a, b) {
+		surveys.sort(function(a, b) {
 			if (! a.order) return a.id > b.id;
 			return a.order && a.order > b.order ? 1 : -1;
 		});
