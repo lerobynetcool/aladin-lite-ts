@@ -30,13 +30,13 @@ import { Utils } from './Utils'
 
 // cache (at the source code level) of the list of HiPS
 // this is the result to a query to http://alasky.u-strasbg.fr/MocServer/query?dataproduct_type=image&client_application=AladinLite&fmt=json&fields=ID,obs_title,client_sort_key,client_application,hips_service_url*,hips_order,hips_tile_format,hips_frame
-type HipsServiceDesc = {
+export type HipsServiceDesc = {
 	"ID"                  : string,
 	"obs_title"           : string,
 	"client_sort_key"    ?: string,
 	"client_application" ?: string|string[],
 	"hips_order"          : string|number, // this is probably an error
-	"hips_frame"          : string|string[], // maybe always use array ?
+	"hips_frame"          : string, // maybe always use array ?
 	"hips_tile_format"    : string,
 	"hips_service_url"    : string,
 	"hips_service_url_1" ?: string,
@@ -245,7 +245,7 @@ let AL_CACHE_CLASS_LEVEL: HipsServiceDesc[] = [{
 		"client_sort_key": "06-xx",
 		"client_application":[ "AladinLite", "AladinDesktop"],
 		"hips_order": "3",
-		"hips_frame": ["galactic", "galactic"],
+		"hips_frame": "galactic", // TODO : this used to be `["galactic", "galactic"]` is it a bug ?
 		"hips_tile_format": "png jpeg fits",
 		"hips_service_url": "http://cade.irap.omp.eu/documents/Ancillary/4Aladin/VTSS",
 		"hips_service_url_1": "http://alasky.unistra.fr/IRAP/VTSS",
