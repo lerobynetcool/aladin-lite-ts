@@ -376,12 +376,7 @@ class Catalog {
 
 	// return a source by index
 	getSource(idx) {
-		if (idx<this.sources.length) {
-			return this.sources[idx]
-		}
-		else {
-			return null
-		}
+		return this.sources[idx]
 	}
 
 	setView(view) {
