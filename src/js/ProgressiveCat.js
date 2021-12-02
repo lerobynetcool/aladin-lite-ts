@@ -329,8 +329,6 @@ class ProgressiveCat {
 		this.reportChange()
 	}
 
-	reportChange() { this.view.requestRedraw() }
-
 	getTileURL(norder, npix) {
 		let dirIdx = Math.floor(npix/10000)*10000
 		return `${this.rootUrl}/Norder${norder}/Dir${dirIdx}/Npix${npix}.tsv`
