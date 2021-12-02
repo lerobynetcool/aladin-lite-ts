@@ -117,7 +117,8 @@ function findRADecFields(fields, raField, decField) {
 // TODO : harmoniser parsing avec classe ProgressiveCat
 class Catalog {
 	constructor(options = {}) {
-		this.type = 'catalog';    	this.name = options.name || "catalog"
+		this.type = 'catalog';
+		this.name = options.name || "catalog"
 		this.color = options.color || Color.getNextColor()
 		this.sourceSize = options.sourceSize || 8
 		this.markerSize = options.sourceSize || 12
@@ -145,10 +146,6 @@ class Catalog {
 
 		if (this.shape instanceof Image || this.shape instanceof HTMLCanvasElement) {
 			this.sourceSize = this.shape.width
-		}
-		this._shapeIsFunction = false; // if true, the shape is a function drawing on the canvas
-		if ($.isFunction(this.shape)) {
-			this._shapeIsFunction = true
 		}
 
 		this.selectionColor = '#00ff00'
@@ -405,19 +402,13 @@ class Catalog {
 
 		//ctx.lineWidth = 1
 		//ctx.beginPath()
-		if (this._shapeIsFunction) {
-			ctx.save()
-		}
+		if (typeof this.shape === 'function') ctx.save()
 		let sourcesInView = []
  		for (var k=0, len = this.sources.length; k<len; k++) {
 			let inView = cds.Catalog.drawSource(this, this.sources[k], ctx, projection, frame, width, height, largestDim, zoomFactor)
-			if (inView) {
-				sourcesInView.push(this.sources[k])
-			}
+			if (inView) sourcesInView.push(this.sources[k])
 		}
-		if (this._shapeIsFunction) {
-			ctx.restore()
-		}
+		if (typeof this.shape === 'function') ctx.restore()
 		//ctx.stroke()
 
 		// tracé sélection
@@ -426,11 +417,8 @@ class Catalog {
 		let source
 		for (var k=0, len = sourcesInView.length; k<len; k++) {
 			source = sourcesInView[k]
-			if (! source.isSelected) {
-				continue
-			}
+			if (! source.isSelected) continue
 			cds.Catalog.drawSourceSelection(this, source, ctx)
-
 		}
 		// NEEDED ?
 		//ctx.stroke()
@@ -439,9 +427,7 @@ class Catalog {
 		if (this.displayLabel) {
 			ctx.fillStyle = this.labelColor
 			ctx.font = this.labelFont
-			for (var k=0, len = sourcesInView.length; k<len; k++) {
-				cds.Catalog.drawSourceLabel(this, sourcesInView[k], ctx)
-			}
+			sourcesInView.forEach( s => cds.Catalog.drawSourceLabel(this, s, ctx) )
 		}
 	}
 
@@ -471,7 +457,7 @@ class Catalog {
 
 				s.x = xyview.vx
 				s.y = xyview.vy
-				if (catalogInstance._shapeIsFunction) {
+				if (typeof this.shape === "function") {
 					catalogInstance.shape(s, ctx, catalogInstance.view.getViewParams())
 				}
 				else if (s.marker && s.useMarkerDefaultIcon) {
@@ -490,7 +476,7 @@ class Catalog {
 		else return false
 	}
 
-	static drawSourceSelection(catalogInstance, s, ctx) {
+	static getSource(catalogInstance, s, ctx) {
 		if (!s || !s.isShowing || !s.x || !s.y) return
 		let sourceSize = catalogInstance.selectSize
 		ctx.drawImage(catalogInstance.cacheSelectCanvas, s.x-sourceSize/2, s.y-sourceSize/2)
@@ -498,10 +484,8 @@ class Catalog {
 
 	static drawSourceLabel(catalogInstance, s, ctx) {
 		if (!s || !s.isShowing || !s.x || !s.y) return
-
 		let label = s.data[catalogInstance.labelColumn]
 		if (!label) return
-
 		ctx.fillText(label, s.x, s.y)
 	}
 
@@ -515,12 +499,9 @@ class Catalog {
 	}
 
 	hide() {
-		if (! this.isShowing) return
+		if (!this.isShowing) return
 		this.isShowing = false
-		if (this.view && this.view.popup && this.view.popup.source && this.view.popup.source.catalog==this) {
-			this.view.popup.hide()
-		}
-
+		if (this?.view?.popup?.source?.catalog==this) this.view.popup.hide()
 		this.reportChange()
 	}
 
