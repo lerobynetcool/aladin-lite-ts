@@ -356,8 +356,7 @@ class ProgressiveCat {
 		}
 		let keys = this.sourcesCache.keys()
 		for (key in keys) {
-			if (!this.sourcesCache[key]) continue
-			let sources = this.sourcesCache[key]
+			let sources = this.sourcesCache.get(key)
 			for (let k=0; k<sources.length; k++) {
 				sources[k].deselect()
 			}
