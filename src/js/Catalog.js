@@ -26,9 +26,107 @@
  *
  *****************************************************************************/
 
+// find RA, Dec fields among the given fields
+//
+// @param fields: list of objects with ucd, unit, ID, name attributes
+// @param raField:  index or name of right ascension column (might be undefined)
+// @param decField: index or name of declination column (might be undefined)
+//
+function findRADecFields(fields, raField, decField) {
+	var raFieldIdx,  decFieldIdx;
+	raFieldIdx = decFieldIdx = null;
+
+	// first, look if RA/DEC fields have been already given
+	if (raField) { // ID or name of RA field given at catalogue creation
+		for (var l=0, len=fields.length; l<len; l++) {
+			var field = fields[l];
+			if (Utils.isInt(raField) && raField<fields.length) { // raField can be given as an index
+				raFieldIdx = raField;
+				break;
+			}
+			if ( (field.ID && field.ID===raField) || (field.name && field.name===raField)) {
+				raFieldIdx = l;
+				break;
+			}
+		}
+	}
+	if (decField) { // ID or name of dec field given at catalogue creation
+		for (var l=0, len=fields.length; l<len; l++) {
+			var field = fields[l];
+			if (Utils.isInt(decField) && decField<fields.length) { // decField can be given as an index
+				decFieldIdx = decField;
+				break;
+			}
+			if ( (field.ID && field.ID===decField) || (field.name && field.name===decField)) {
+				decFieldIdx = l;
+				break;
+			}
+		}
+	}
+	// if not already given, let's guess position columns on the basis of UCDs
+	for (var l=0, len=fields.length; l<len; l++) {
+		if (raFieldIdx!=null && decFieldIdx!=null) {
+			break;
+		}
+
+		var field = fields[l];
+		if ( ! raFieldIdx) {
+			if (field.ucd) {
+				var ucd = $.trim(field.ucd.toLowerCase());
+				if (ucd.indexOf('pos.eq.ra')==0 || ucd.indexOf('pos_eq_ra')==0) {
+					raFieldIdx = l;
+					continue;
+				}
+			}
+		}
+
+		if ( ! decFieldIdx) {
+			if (field.ucd) {
+				var ucd = $.trim(field.ucd.toLowerCase());
+				if (ucd.indexOf('pos.eq.dec')==0 || ucd.indexOf('pos_eq_dec')==0) {
+					decFieldIdx = l;
+					continue;
+				}
+			}
+		}
+	}
+
+	// still not found ? try some common names for RA and Dec columns
+	if (raFieldIdx==null && decFieldIdx==null) {
+		for (var l=0, len=fields.length; l<len; l++) {
+			var field = fields[l];
+			var name = field.name || field.ID || '';
+			name = name.toLowerCase();
+
+			if ( ! raFieldIdx) {
+				if (name.indexOf('ra')==0 || name.indexOf('_ra')==0 || name.indexOf('ra(icrs)')==0 || name.indexOf('_ra')==0 || name.indexOf('alpha')==0) {
+					raFieldIdx = l;
+					continue;
+				}
+			}
+
+			if ( ! decFieldIdx) {
+				if (name.indexOf('dej2000')==0 || name.indexOf('_dej2000')==0 || name.indexOf('de')==0 || name.indexOf('de(icrs)')==0 || name.indexOf('_de')==0 || name.indexOf('delta')==0) {
+					decFieldIdx = l;
+					continue;
+				}
+			}
+
+		}
+	}
+
+	// last resort: take two first fieds
+	if (raFieldIdx==null || decFieldIdx==null) {
+		raFieldIdx  = 0;
+		decFieldIdx = 1
+	}
+
+	return [raFieldIdx, decFieldIdx];
+}
+
 // TODO : harmoniser parsing avec classe ProgressiveCat
-cds.Catalog = (function() {
-   cds.Catalog = function(options) {
+class Catalog {
+	constructor(options) {
 		options = options || {};
 
 		this.type = 'catalog';    	this.name = options.name || "catalog";
@@ -87,9 +185,9 @@ cds.Catalog = (function() {
 
 
 		this.isShowing = true;
-	};
+	}
 
-	cds.Catalog.createShape = function(shapeName, color, sourceSize) {
+	static createShape(shapeName, color, sourceSize) {
 		if (shapeName instanceof Image || shapeName instanceof HTMLCanvasElement) { // in this case, the shape is already created
 			return shapeName;
 		}
@@ -147,112 +245,11 @@ cds.Catalog = (function() {
 
 		return c;
 
-	};
-
-
-		// find RA, Dec fields among the given fields
-		//
-		// @param fields: list of objects with ucd, unit, ID, name attributes
-		// @param raField:  index or name of right ascension column (might be undefined)
-		// @param decField: index or name of declination column (might be undefined)
-		//
-		function findRADecFields(fields, raField, decField) {
-			var raFieldIdx,  decFieldIdx;
-			raFieldIdx = decFieldIdx = null;
-
-			// first, look if RA/DEC fields have been already given
-			if (raField) { // ID or name of RA field given at catalogue creation
-				for (var l=0, len=fields.length; l<len; l++) {
-					var field = fields[l];
-					if (Utils.isInt(raField) && raField<fields.length) { // raField can be given as an index
-						raFieldIdx = raField;
-						break;
-					}
-					if ( (field.ID && field.ID===raField) || (field.name && field.name===raField)) {
-						raFieldIdx = l;
-						break;
-					}
-				}
-			}
-			if (decField) { // ID or name of dec field given at catalogue creation
-				for (var l=0, len=fields.length; l<len; l++) {
-					var field = fields[l];
-					if (Utils.isInt(decField) && decField<fields.length) { // decField can be given as an index
-						decFieldIdx = decField;
-						break;
-					}
-					if ( (field.ID && field.ID===decField) || (field.name && field.name===decField)) {
-						decFieldIdx = l;
-						break;
-					}
-				}
-			}
-			// if not already given, let's guess position columns on the basis of UCDs
-			for (var l=0, len=fields.length; l<len; l++) {
-				if (raFieldIdx!=null && decFieldIdx!=null) {
-					break;
-				}
-
-				var field = fields[l];
-				if ( ! raFieldIdx) {
-					if (field.ucd) {
-						var ucd = $.trim(field.ucd.toLowerCase());
-						if (ucd.indexOf('pos.eq.ra')==0 || ucd.indexOf('pos_eq_ra')==0) {
-							raFieldIdx = l;
-							continue;
-						}
-					}
-				}
-
-				if ( ! decFieldIdx) {
-					if (field.ucd) {
-						var ucd = $.trim(field.ucd.toLowerCase());
-						if (ucd.indexOf('pos.eq.dec')==0 || ucd.indexOf('pos_eq_dec')==0) {
-							decFieldIdx = l;
-							continue;
-						}
-					}
-				}
-			}
-
-			// still not found ? try some common names for RA and Dec columns
-			if (raFieldIdx==null && decFieldIdx==null) {
-				for (var l=0, len=fields.length; l<len; l++) {
-					var field = fields[l];
-					var name = field.name || field.ID || '';
-					name = name.toLowerCase();
-
-					if ( ! raFieldIdx) {
-						if (name.indexOf('ra')==0 || name.indexOf('_ra')==0 || name.indexOf('ra(icrs)')==0 || name.indexOf('_ra')==0 || name.indexOf('alpha')==0) {
-							raFieldIdx = l;
-							continue;
-						}
-					}
-
-					if ( ! decFieldIdx) {
-						if (name.indexOf('dej2000')==0 || name.indexOf('_dej2000')==0 || name.indexOf('de')==0 || name.indexOf('de(icrs)')==0 || name.indexOf('_de')==0 || name.indexOf('delta')==0) {
-							decFieldIdx = l;
-							continue;
-						}
-					}
-
-				}
-			}
-
-			// last resort: take two first fieds
-			if (raFieldIdx==null || decFieldIdx==null) {
-				raFieldIdx  = 0;
-				decFieldIdx = 1
-			}
-
-			return [raFieldIdx, decFieldIdx];
-		};
-
-
+	}
 
 	// return an array of Source(s) from a VOTable url
 	// callback function is called each time a TABLE element has been parsed
-	cds.Catalog.parseVOTable = function(url, callback, maxNbSources, useProxy, raField, decField) {
+	static parseVOTable(url, callback, maxNbSources, useProxy, raField, decField) {
 
 		// adapted from votable.js
 		function getPrefix($xml) {
@@ -349,10 +346,10 @@ cds.Catalog = (function() {
 		ajax.done(function(xml) {
 			doParseVOTable(xml, callback);
 		});
-	};
+	}
 
 	// API
-	cds.Catalog.prototype.updateShape = function(options) {
+	updateShape(options) {
 		options = options || {};
 		this.color = options.color || this.color || Color.getNextColor();
 		this.sourceSize = options.sourceSize || this.sourceSize || 6;
@@ -364,17 +361,17 @@ cds.Catalog = (function() {
 		this.cacheSelectCanvas = cds.Catalog.createShape('square', this.selectionColor, this.selectSize);
 
 		this.reportChange();
-	};
+	}
 
 	// API
-	cds.Catalog.prototype.addSources = function(sourcesToAdd) {
+	addSources(sourcesToAdd) {
 		sourcesToAdd = [].concat(sourcesToAdd); // make sure we have an array and not an individual source
 		this.sources = this.sources.concat(sourcesToAdd);
 		for (var k=0, len=sourcesToAdd.length; k<len; k++) {
 			sourcesToAdd[k].setCatalog(this);
 		}
 		this.reportChange();
-	};
+	}
 
 	// API
 	//
@@ -382,7 +379,7 @@ cds.Catalog = (function() {
 	//
 	// @param columnNames: array with names of the columns
 	// @array: 2D-array, each item being a 1d-array with the same number of items as columnNames
-	cds.Catalog.prototype.addSourcesAsArray = function(columnNames, array) {
+	addSourcesAsArray(columnNames, array) {
 		var fields = [];
 		for (var colIdx=0 ; colIdx<columnNames.length; colIdx++) {
 			fields.push({name: columnNames[colIdx]});
@@ -417,15 +414,13 @@ cds.Catalog = (function() {
 		}
 
 		this.addSources(newSources);
-	};
+	}
 
 	// return the current list of Source objects
-	cds.Catalog.prototype.getSources = function() {
-		return this.sources;
-	};
+	getSources() { return this.sources }
 
 	// TODO : fonction générique traversant la liste des sources
-	cds.Catalog.prototype.selectAll = function() {
+	selectAll() {
 		if (! this.sources) {
 			return;
 		}
@@ -433,9 +428,9 @@ cds.Catalog = (function() {
 		for (var k=0; k<this.sources.length; k++) {
 			this.sources[k].select();
 		}
-	};
+	}
 
-	cds.Catalog.prototype.deselectAll = function() {
+	deselectAll() {
 		if (! this.sources) {
 			return;
 		}
@@ -443,25 +438,25 @@ cds.Catalog = (function() {
 		for (var k=0; k<this.sources.length; k++) {
 			this.sources[k].deselect();
 		}
-	};
+	}
 
 	// return a source by index
-	cds.Catalog.prototype.getSource = function(idx) {
+	getSource(idx) {
 		if (idx<this.sources.length) {
 			return this.sources[idx];
 		}
 		else {
 			return null;
 		}
-	};
+	}
 
-	cds.Catalog.prototype.setView = function(view) {
+	setView(view) {
 		this.view = view;
 		this.reportChange();
-	};
+	}
 
 	// remove a source
-	cds.Catalog.prototype.remove = function(source) {
+	remove(source) {
 		var idx = this.sources.indexOf(source);
 		if (idx<0) {
 			return;
@@ -471,14 +466,12 @@ cds.Catalog = (function() {
 		this.sources.splice(idx, 1);
 
 		this.reportChange();
-	};
+	}
 
-	cds.Catalog.prototype.removeAll = cds.Catalog.prototype.clear = function() {
-		// TODO : RAZ de l'index
-		this.sources = [];
-	};
+	removeAll() { this.sources = [] } // TODO : RAZ de l'index
+	clear() { return this.removeAll() }
 
-	cds.Catalog.prototype.draw = function(ctx, projection, frame, width, height, largestDim, zoomFactor) {
+	draw(ctx, projection, frame, width, height, largestDim, zoomFactor) {
 		if (! this.isShowing) {
 			return;
 		}
@@ -525,11 +518,9 @@ cds.Catalog = (function() {
 				cds.Catalog.drawSourceLabel(this, sourcesInView[k], ctx);
 			}
 		}
-	};
+	}
 
-
-
-	cds.Catalog.drawSource = function(catalogInstance, s, ctx, projection, frame, width, height, largestDim, zoomFactor) {
+	static drawSource(catalogInstance, s, ctx, projection, frame, width, height, largestDim, zoomFactor) {
 		if (! s.isShowing) {
 			return false;
 		}
@@ -583,19 +574,18 @@ cds.Catalog = (function() {
 			return false;
 		}
 
+	}
 
-	};
-
-	cds.Catalog.drawSourceSelection = function(catalogInstance, s, ctx) {
+	static drawSourceSelection(catalogInstance, s, ctx) {
 		if (!s || !s.isShowing || !s.x || !s.y) {
 			return;
 		}
 		var sourceSize = catalogInstance.selectSize;
 
 		ctx.drawImage(catalogInstance.cacheSelectCanvas, s.x-sourceSize/2, s.y-sourceSize/2);
-	};
+	}
 
-	cds.Catalog.drawSourceLabel = function(catalogInstance, s, ctx) {
+	static drawSourceLabel(catalogInstance, s, ctx) {
 		if (!s || !s.isShowing || !s.x || !s.y) {
 			return;
 		}
@@ -606,23 +596,20 @@ cds.Catalog = (function() {
 		}
 
 		ctx.fillText(label, s.x, s.y);
-	};
-
+	}
 
 	// callback function to be called when the status of one of the sources has changed
-	cds.Catalog.prototype.reportChange = function() {
-		this.view && this.view.requestRedraw();
-	};
+	reportChange() { this.view && this.view.requestRedraw() }
 
-	cds.Catalog.prototype.show = function() {
+	show() {
 		if (this.isShowing) {
 			return;
 		}
 		this.isShowing = true;
 		this.reportChange();
-	};
+	}
 
-	cds.Catalog.prototype.hide = function() {
+	hide() {
 		if (! this.isShowing) {
 			return;
 		}
@@ -632,7 +619,6 @@ cds.Catalog = (function() {
 		}
 
 		this.reportChange();
-	};
+	}
 
-	return cds.Catalog;
-})();
+}
