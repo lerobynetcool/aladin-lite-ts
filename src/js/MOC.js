@@ -22,21 +22,7 @@ function drawCorners(ctx, xyCorners) {
 }
 
 // remove duplicate items from array a
-function uniq(a) {
-	var seen = {};
-	var out = [];
-	var len = a.length;
-	var j = 0;
-	for (var i = 0; i < len; i++) {
-		var item = a[i];
-		if (seen[item] !== 1) {
-			seen[item] = 1;
-			out[j++] = item;
-		}
-	}
-
-	return out;
-};
+function uniq(a) { return [...new Set(self)]}
 
 // TODO: merge with what is done in View.getVisibleCells
 var _spVec = new SpatialVector();
