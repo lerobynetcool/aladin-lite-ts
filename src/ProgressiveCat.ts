@@ -26,32 +26,40 @@
  *
  *****************************************************************************/
 
-function getFields(instance, xml) {
-	let attributes = ["name", "ID", "ucd", "utype", "unit", "datatype", "arraysize", "width", "precision"]
+import { MetaCatalog } from './Catalog'
+import { Utils, LRUCache, uniq } from './Utils'
+import { CooFrameEnum, CooFrameEnumType } from './CooFrameEnum'
+import { Color } from './Color'
+import { View } from './View'
+import { Projection } from './libs/astro/projection'
+import { Source } from './Source'
+import { Coo } from './libs/astro/coo'
+import { HipsServiceDesc } from './HiPSDefinition'
 
-	let fields = []
+function getFields(self: ProgressiveCat, xml: any) {
+	let attributes = ["name", "ID", "ucd", "utype", "unit", "datatype", "arraysize", "width", "precision"]
+	let fields: any[] = []
 	let k = 0
-	instance.keyRa = instance.keyDec = null
+	self.keyRa = self.keyDec = undefined
 	$(xml).find("FIELD").each(function() {
-		let f = {}
+		let f: any = {}
 		attributes.forEach( attribute => {
 			if ($(this).attr(attribute)) f[attribute] = $(this).attr(attribute)
 		})
 		f.ID = f.ID || `col_${k}`
-		if (!instance.keyRa && f.ucd && (f.ucd.indexOf('pos.eq.ra')==0 || f.ucd.indexOf('POS_EQ_RA')==0)) {
-			instance.keyRa = f.name || f.ID
+		if (!self.keyRa && f.ucd && (f.ucd.indexOf('pos.eq.ra')==0 || f.ucd.indexOf('POS_EQ_RA')==0)) {
+			self.keyRa = f.name || f.ID
 		}
-		if (!instance.keyDec && f.ucd && (f.ucd.indexOf('pos.eq.dec')==0 || f.ucd.indexOf('POS_EQ_DEC')==0)) {
-			instance.keyDec = f.name || f.ID
+		if (!self.keyDec && f.ucd && (f.ucd.indexOf('pos.eq.dec')==0 || f.ucd.indexOf('POS_EQ_DEC')==0)) {
+			self.keyDec = f.name || f.ID
 		}
 		fields.push(f)
 		k++
 	})
-
 	return fields
 }
 
-function getSources(instance, csv, fields) {
+function getSources(instance: any, csv: string, fields: any[]) {
 	// TODO : find ra and dec key names (see in Catalog)
 	if (!instance.keyRa || ! instance.keyDec) return []
 	let lines = csv.split('\n')
@@ -62,7 +70,7 @@ function getSources(instance, csv, fields) {
 	let newSource
 	// start at i=1, as first line repeat the fields names
 	for (let i=2; i<lines.length; i++) {
-		let mesures = {}
+		let mesures: {[key: string]: any} = {}
 		let data = lines[i].split('\t')
 		if (data.length<mesureKeys.length) continue
 		for (let j=0; j<mesureKeys.length; j++) {
@@ -75,10 +83,10 @@ function getSources(instance, csv, fields) {
 		}
 		else {
 			coo.parse(mesures[instance.keyRa] + " " + mesures[instance.keyDec])
-			ra = coo.lon
+			ra  = coo.lon
 			dec = coo.lat
 		}
-		newSource = new cds.Source(ra, dec, mesures)
+		newSource = new Source(ra, dec, mesures)
 		sources.push(newSource)
 		newSource.setCatalog(instance)
 	}
@@ -87,14 +95,38 @@ function getSources(instance, csv, fields) {
 
 // TODO: index sources according to their HEALPix ipix
 // TODO : merge parsing with class Catalog
-class ProgressiveCat {
+export class ProgressiveCat extends MetaCatalog {
 	type = 'progressivecat'
+
+	rootUrl: string
+	frameStr?: string
+	maxOrder: number
+	isShowing = true // TODO : inherit from catalogue
+	frame: CooFrameEnum
+	name: string
+	selectionColor = '#00ff00' // TODO: to be merged with Catalog
+
+	maxOrderAllsky = 2
+	isReady = false
+
+	keyRa?: number
+	keyDec?: number
+
+	tilesInView: [number,number][] = []
+
+	order1Sources: Source[] = []
+	order2Sources: Source[] = []
+	order3Sources: Source[] = []
+
+	fields: any[] = []
+
+	sourcesCache: LRUCache<Source[]>
+	filterFn: (src: Source) => boolean
 
 	// TODO : test if CORS support. If no, need to pass through a proxy
 	// currently, we suppose CORS is supported
-
-	constructor(rootUrl, frameStr, maxOrder, options = {}) {
-
+	constructor(rootUrl: string, frameStr: string|undefined, maxOrder: number, options: any = {}) {
+		super()
 		this.rootUrl = rootUrl // TODO: method to sanitize rootURL (absolute, no duplicate slashes, remove end slash if existing)
 		// fast fix for HTTPS support --> will work for all HiPS served by CDS
 		if (Utils.isHttpsContext() && ( /u-strasbg.fr/i.test(this.rootUrl) || /unistra.fr/i.test(this.rootUrl)  ) ) {
@@ -104,40 +136,35 @@ class ProgressiveCat {
 		this.frameStr = frameStr
 		this.frame = CooFrameEnum.fromString(frameStr) || CooFrameEnum.J2000
 		this.maxOrder = maxOrder
-		this.isShowing = true // TODO : inherit from catalogue
 
 		this.name = options.name || "progressive-cat"
 		this.color = options.color || Color.getNextColor()
 		this.shape = options.shape || "square"
 		this.sourceSize = options.sourceSize || 6
 		this.selectSize = this.sourceSize + 2
-		this.selectionColor = '#00ff00' // TODO: to be merged with Catalog
 
 		// allows for filtering of sources
-		this.filterFn = options.filter || undefined // TODO: do the same for catalog
+		this.filterFn = options.filter || ((s)=>true) // TODO: do the same for catalog
 
 		this.onClick = options.onClick || undefined // TODO: inherit from catalog
 
 		// we cache the list of sources in each healpix tile. Key of the cache is norder+'-'+npix
-		this.sourcesCache = new Utils.LRUCache(100)
+		this.sourcesCache = new LRUCache(100)
 
 		this.updateShape(options)
-
-		this.maxOrderAllsky = 2
-		this.isReady = false
 	}
 
 	// TODO: to be put higher in the class diagram, in a HiPS generic class
-	static readProperties(rootUrl, successCallback, errorCallback = (err)=>{}) {
+	static readProperties(rootUrl: string, successCallback: (props: HipsServiceDesc)=>void, errorCallback = (err: any)=>{}) {
 		if (!successCallback) return
 
-		let propertiesURL = rootUrl + '/properties'
+		let propertiesURL = `${rootUrl}/properties`
 		$.ajax({
 			url: propertiesURL,
 			method: 'GET',
 			dataType: 'text',
-			success: function(propertiesTxt) {
-				let props = {}
+			success: function(propertiesTxt: string) {
+				let props: any = {}
 				let lines = propertiesTxt.split('\n')
 				lines.forEach( line => {
 					let idx = line.indexOf('=')
@@ -151,9 +178,9 @@ class ProgressiveCat {
 		})
 	}
 
-	//ProgressiveCat.prototype.updateShape = cds.Catalog.prototype.updateShape
+	properties?: HipsServiceDesc
 
-	init(view) {
+	init(view: View) {
 		let self = this
 		this.view = view
 		if (this.maxOrder && this.frameStr) this._loadMetadata()
@@ -161,29 +188,27 @@ class ProgressiveCat {
 			ProgressiveCat.readProperties(self.rootUrl,
 				(properties) => {
 					self.properties = properties
-					self.maxOrder = self.properties['hips_order']
-					self.frame = CooFrameEnum.fromString(self.properties['hips_frame'])
+					self.maxOrder = self.properties['hips_order'] as number // TODO : this could be a string
+					self.frame = CooFrameEnum.fromString(self.properties['hips_frame']) as CooFrameEnumType // TODO : could be undefined
 
 					self._loadMetadata()
-				}, (err) => {
+				}, () => {
 					console.log('Could not find properties for HiPS ' + self.rootUrl)
 				}
 			)
 		}
 	}
 
-	updateShape = cds.Catalog.prototype.updateShape
-
 	_loadMetadata() {
 		let self = this
 		$.ajax({
-			url: self.rootUrl + '/' + 'Metadata.xml',
+			url: `${self.rootUrl}/Metadata.xml`,
 			method: 'GET',
 			success: (xml) => {
 				self.fields = getFields(self, xml)
 				self._loadAllskyNewMethod()
 			},
-			error: (err) => {
+			error: () => {
 				self._loadAllskyOldMethod()
 			}
 		})
@@ -192,7 +217,7 @@ class ProgressiveCat {
 	_loadAllskyNewMethod() {
 		let self = this
 		$.ajax({
-			url: self.rootUrl + '/' + 'Norder1/Allsky.tsv',
+			url: `${self.rootUrl}/Norder1/Allsky.tsv`,
 			method: 'GET',
 			success: function(tsv) {
 				self.order1Sources = getSources(self, tsv, self.fields)
@@ -204,7 +229,7 @@ class ProgressiveCat {
 			error: (err) => console.log('Something went wrong: ' + err)
 		})
 		$.ajax({
-			url: self.rootUrl + '/' + 'Norder2/Allsky.tsv',
+			url: `${self.rootUrl}/Norder2/Allsky.tsv`,
 			method: 'GET',
 			success: function(tsv) {
 				self.order2Sources = getSources(self, tsv, self.fields)
@@ -226,7 +251,7 @@ class ProgressiveCat {
 	_loadLevel2Sources() {
 		let self = this
 		$.ajax({
-			url: self.rootUrl + '/' + 'Norder2/Allsky.xml',
+			url: `${self.rootUrl}/Norder2/Allsky.xml`,
 			method: 'GET',
 			success: (xml) => {
 				self.fields = getFields(self, xml)
@@ -243,7 +268,7 @@ class ProgressiveCat {
 	_loadLevel3Sources() {
 		let self = this
 		$.ajax({
-			url: self.rootUrl + '/' + 'Norder3/Allsky.xml',
+			url: `${self.rootUrl}/Norder3/Allsky.xml`,
 			method: 'GET',
 			success: (xml) => {
 				self.order3Sources = getSources(self, $(xml).find('CSV').text(), self.fields)
@@ -261,13 +286,12 @@ class ProgressiveCat {
 		this.loadNeededTiles()
 	}
 
-	draw(ctx, projection, frame, width, height, largestDim, zoomFactor) {
+	draw(ctx: CanvasRenderingContext2D, projection: Projection, frame: any, width: number, height: number, largestDim: number, zoomFactor: number) {
 		if (! this.isShowing || ! this.isReady) return
 		this.drawSources(this.order1Sources, ctx, projection, frame, width, height, largestDim, zoomFactor)
 		this.drawSources(this.order2Sources, ctx, projection, frame, width, height, largestDim, zoomFactor)
 		this.drawSources(this.order3Sources, ctx, projection, frame, width, height, largestDim, zoomFactor)
 
-		if (!this.tilesInView) return
 		this.tilesInView.forEach( t => {
 			let key = t[0] + '-' + t[1]
 			let sources = this.sourcesCache.get(key)
@@ -277,42 +301,34 @@ class ProgressiveCat {
 		})
 	}
 
-	drawSources(sources, ctx, projection, frame, width, height, largestDim, zoomFactor) {
+	drawSources(sources: Source[], ctx: CanvasRenderingContext2D, projection: Projection, frame: any, width: number, height: number, largestDim: number, zoomFactor: number) {
 		if (!sources) return
-		sources.forEach( s =>{
-			if (!this.filterFn || this.filterFn(s)) {
-				cds.Catalog.drawSource(this, s, ctx, projection, frame, width, height, largestDim, zoomFactor)
-			}
-		})
-		source.filter( s => s.isSelected ).forEach( s => {
-			if (!this.filterFn || this.filterFn(s)) {
-				cds.Catalog.drawSourceSelection(this, s, ctx)
-			}
-		})
+		let src = sources.filter( s => this.filterFn(s) )
+		src.forEach( s => this.drawSource(s, ctx, projection, frame, width, height, largestDim, zoomFactor) )
+		src.filter( s => s.isSelected ).forEach( s => this.drawSourceSelection(s, ctx) )
 	}
 
 	getSources() {
-		let ret = []
-		if (this.order1Sources) ret = ret.concat(this.order1Sources)
-		if (this.order2Sources) ret = ret.concat(this.order2Sources)
-		if (this.order3Sources) ret = ret.concat(this.order3Sources)
-		if (this.tilesInView) {
-			this.tilesInView.forEach( t => {
-				let key = t[0] + '-' + t[1]
-				let sources = this.sourcesCache.get(key)
-				if (sources) ret = ret.concat(sources)
-			})
-		}
+		let ret: Source[] = []
+		ret = ret.concat(this.order1Sources)
+		ret = ret.concat(this.order2Sources)
+		ret = ret.concat(this.order3Sources)
+
+		this.tilesInView.forEach( t => {
+			let key = t[0] + '-' + t[1]
+			let sources = this.sourcesCache.get(key) || []
+			ret = ret.concat(sources)
+		})
 		return ret
 	}
 
 	deselectAll() {
-		if (this.order1Sources) this.order1Sources.forEach( s => s.deselect() )
-		if (this.order2Sources) this.order2Sources.forEach( s => s.deselect() )
-		if (this.order3Sources) this.order3Sources.forEach( s => s.deselect() )
+		this.order1Sources.forEach( s => s.deselect() )
+		this.order2Sources.forEach( s => s.deselect() )
+		this.order3Sources.forEach( s => s.deselect() )
 
 		for (let key in this.sourcesCache.keys()) {
-			this.sourcesCache.get(key).forEach( source => source.deselect() )
+			this.sourcesCache.get(key).forEach( s => s.deselect() )
 		}
 	}
 
@@ -329,7 +345,7 @@ class ProgressiveCat {
 		this.reportChange()
 	}
 
-	getTileURL(norder, npix) {
+	getTileURL(norder: number, npix: number) {
 		let dirIdx = Math.floor(npix/10000)*10000
 		return `${this.rootUrl}/Norder${norder}/Dir${dirIdx}/Npix${npix}.tsv`
 	}
@@ -344,12 +360,8 @@ class ProgressiveCat {
 		if (norder<=this.maxOrderAllsky) return // nothing to do, hurrayh !
 		let cells = this.view.getVisibleCells(norder, this.frame)
 		for (let curOrder=3; curOrder<=norder; curOrder++) {
-			let ipixList = []
-			cells.forEach( cell => {
-				let ipix = Math.floor(cell.ipix / Math.pow(4, norder - curOrder))
-				if (ipixList.indexOf(ipix)<0) ipixList.push(ipix)
-			})
-			ipixList.forEach( ipix => this.tilesInView.push([curOrder, ipix]) ) // load needed tiles
+			let ipixList = uniq(cells.map( cell => Math.floor((cell as any).ipix / Math.pow(4, norder - curOrder)) )) // TODO :
+			ipixList.forEach( ipix => this.tilesInView.push([curOrder, ipix])) // load needed tiles
 		}
 
 		this.tilesInView.forEach( t => {
@@ -377,8 +389,5 @@ class ProgressiveCat {
 		})
 	}
 
-	reportChange() { // TODO: to be shared with Catalog
-		this.view && this.view.requestRedraw()
-	}
-
+	reportChange() { this.view.requestRedraw() }// TODO: to be shared with Catalog
 }
