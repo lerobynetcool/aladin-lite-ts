@@ -230,13 +230,11 @@ class Catalog {
 		}
 
 		return c
-
 	}
 
 	// return an array of Source(s) from a VOTable url
 	// callback function is called each time a TABLE element has been parsed
 	static parseVOTable(url, callback, maxNbSources, useProxy, raField, decField) {
-
 		// adapted from votable.js
 		function getPrefix($xml) {
 			let prefix
@@ -247,19 +245,15 @@ class Catalog {
 			else {
 				// Select all data in the document
 				prefix = $xml.find("*").first()
-
 				if (prefix.length==0) return ''
-
 				prefix = prefix.prop("tagName") // get name of the first tag
-
 				let idx = prefix.indexOf(':')
-
 				prefix = prefix.substring(0, idx) + "\\:"
 			}
 			return prefix
 		}
 
-		function doParseVOTable(xml, callback) {
+		function doParseVOTable(xml, callback = ()=>{}) {
 			xml = xml.replace(/^\s+/g, '') // we need to trim whitespaces at start of document
 			let attributes = ["name", "ID", "ucd", "utype", "unit", "datatype", "arraysize", "width", "precision"]
 
@@ -269,28 +263,21 @@ class Catalog {
 			let prefix = getPrefix($xml)
 			$xml.find(prefix + "FIELD").each(function() {
 				let f = {}
-				for (let i=0; i<attributes.length; i++) {
-					let attribute = attributes[i]
-					if ($(this).attr(attribute)) {
-						f[attribute] = $(this).attr(attribute)
-					}
-				}
-				if ( ! f.ID) {
-					f.ID = "col_" + k
-				}
+				attributes.forEach( attribute => {
+					if ($(this).attr(attribute)) f[attribute] = $(this).attr(attribute)
+				})
+				if (!f.ID) f.ID = `col_${k}`
 				fields.push(f)
 				k++
 			})
 
 			let raDecFieldIdxes = findRADecFields(fields, raField, decField)
-			let raFieldIdx,  decFieldIdx
-			raFieldIdx = raDecFieldIdxes[0]
-			decFieldIdx = raDecFieldIdxes[1]
-
+			let raFieldIdx = raDecFieldIdxes[0]
+			let decFieldIdx = raDecFieldIdxes[1]
 			let sources = []
-
 			let coo = new Coo()
-			let ra, dec
+			let ra
+			let dec
 			$xml.find(prefix + "TR").each(function() {
 				let mesures = {}
 				let k = 0
@@ -303,34 +290,25 @@ class Catalog {
 				let keyDec = fields[decFieldIdx].name ? fields[decFieldIdx].name : fields[decFieldIdx].id
 
 				if (Utils.isNumber(mesures[keyRa]) && Utils.isNumber(mesures[keyDec])) {
-					ra = parseFloat(mesures[keyRa])
+					ra  = parseFloat(mesures[keyRa])
 					dec = parseFloat(mesures[keyDec])
 				}
 				else {
-					coo.parse(mesures[keyRa] + " " + mesures[keyDec])
+					coo.parse(`${mesures[keyRa]} ${mesures[keyDec]}`)
 					ra = coo.lon
 					dec = coo.lat
 				}
 				sources.push(new cds.Source(ra, dec, mesures))
-				if (maxNbSources && sources.length==maxNbSources) {
-					return false // break the .each loop
-				}
-
+				if (maxNbSources && sources.length==maxNbSources) return false // break the .each loop
 			})
-			if (callback) {
-				callback(sources)
-			}
+			callback(sources)
 		}
-
-		let ajax = Utils.getAjaxObject(url, 'GET', 'text', useProxy)
-		ajax.done(function(xml) {
-			doParseVOTable(xml, callback)
-		})
+		Utils.getAjaxObject(url, 'GET', 'text', useProxy)
+			.done( (xml) => doParseVOTable(xml, callback) )
 	}
 
 	// API
-	updateShape(options) {
-		options = options || {}
+	updateShape(options = {}) {
 		this.color = options.color || this.color || Color.getNextColor()
 		this.sourceSize = options.sourceSize || this.sourceSize || 6
 		this.shape = options.shape || this.shape || "square"
@@ -347,9 +325,7 @@ class Catalog {
 	addSources(sourcesToAdd) {
 		sourcesToAdd = [].concat(sourcesToAdd) // make sure we have an array and not an individual source
 		this.sources = this.sources.concat(sourcesToAdd)
-		for (let k=0, len=sourcesToAdd.length; k<len; k++) {
-			sourcesToAdd[k].setCatalog(this)
-		}
+		sourcesToAdd.forEach( s => s.setCatalog(this) )
 		this.reportChange()
 	}
 
@@ -360,21 +336,14 @@ class Catalog {
 	// @param columnNames: array with names of the columns
 	// @array: 2D-array, each item being a 1d-array with the same number of items as columnNames
 	addSourcesAsArray(columnNames, array) {
-		let fields = []
-		for (var colIdx=0 ; colIdx<columnNames.length; colIdx++) {
-			fields.push({name: columnNames[colIdx]})
-		}
+		let fields = columnNames.map( colName => {return {name: colName}} )
 		let raDecFieldIdxes = findRADecFields(fields, this.raField, this.decField)
-		let raFieldIdx,  decFieldIdx
-		raFieldIdx = raDecFieldIdxes[0]
-		decFieldIdx = raDecFieldIdxes[1]
-
-
-		let newSources = []
+		let raFieldIdx = raDecFieldIdxes[0]
+		let decFieldIdx = raDecFieldIdxes[1]
 		let coo = new Coo()
-		let ra, dec, row, dataDict
-		for (var rowIdx=0 ; rowIdx<array.length ; rowIdx++) {
-			row = array[rowIdx]
+		let newSources = array.map( row => {
+			let ra
+			let dec
 			if (Utils.isNumber(row[raFieldIdx]) && Utils.isNumber(row[decFieldIdx])) {
 				ra = parseFloat(row[raFieldIdx])
 				dec = parseFloat(row[decFieldIdx])
@@ -384,15 +353,10 @@ class Catalog {
 				ra = coo.lon
 				dec = coo.lat
 			}
-
-			dataDict = {}
-			for (var colIdx=0 ; colIdx<columnNames.length; colIdx++) {
-				dataDict[columnNames[colIdx]] = row[colIdx]
-			}
-
-			newSources.push(A.source(ra, dec, dataDict))
-		}
-
+			let dataDict = {}
+			columnNames.forEach( (colName,colIdx) => dataDict[colName] = row[colIdx] )
+			return A.source(ra, dec, dataDict)
+		})
 		this.addSources(newSources)
 	}
 
@@ -401,19 +365,13 @@ class Catalog {
 
 	// TODO : fonction générique traversant la liste des sources
 	selectAll() {
-		if (! this.sources) return
-
-		for (var k=0; k<this.sources.length; k++) {
-			this.sources[k].select()
-		}
+		if (!this.sources) return
+		this.sources.forEach( s => s.select() )
 	}
 
 	deselectAll() {
 		if (! this.sources) return
-
-		for (var k=0; k<this.sources.length; k++) {
-			this.sources[k].deselect()
-		}
+		this.sources.forEach( s => s.deselect() )
 	}
 
 	// return a source by index
@@ -493,19 +451,15 @@ class Catalog {
 	}
 
 	static drawSource(catalogInstance, s, ctx, projection, frame, width, height, largestDim, zoomFactor) {
-		if (! s.isShowing) {
-			return false
-		}
+		if (!s.isShowing) return false
+
 		let sourceSize = catalogInstance.sourceSize
+		let radec = [s.ra, s.dec]
 		// TODO : we could factorize this code with Aladin.world2pix
-		let xy
 		if (frame.system != CooFrameEnum.SYSTEMS.J2000) {
-			let lonlat = CooConversion.J2000ToGalactic([s.ra, s.dec])
-			xy = projection.project(lonlat[0], lonlat[1])
+			radec = CooConversion.J2000ToGalactic(radec)
 		}
-		else {
-			xy = projection.project(s.ra, s.dec)
-		}
+		let xy = projection.project(radec[0], radec[1])
 
 		if (xy) {
 			let xyview = AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor, true)
@@ -532,20 +486,13 @@ class Catalog {
 					ctx.drawImage(catalogInstance.cacheCanvas, s.x-catalogInstance.cacheCanvas.width/2, s.y-catalogInstance.cacheCanvas.height/2)
 				}
 
-
 				// has associated popup ?
-				if (s.popup) {
-					s.popup.setPosition(s.x, s.y)
-				}
-
+				if (s.popup) s.popup.setPosition(s.x, s.y)
 
 			}
 			return true
 		}
-		else {
-			return false
-		}
-
+		else return false
 	}
 
 	static drawSourceSelection(catalogInstance, s, ctx) {
