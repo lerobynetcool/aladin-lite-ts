@@ -33,217 +33,203 @@
 // @param decField: index or name of declination column (might be undefined)
 //
 function findRADecFields(fields, raField, decField) {
-	var raFieldIdx,  decFieldIdx;
-	raFieldIdx = decFieldIdx = null;
-
+	let raFieldIdx
+	let decFieldIdx
 	// first, look if RA/DEC fields have been already given
 	if (raField) { // ID or name of RA field given at catalogue creation
-		for (var l=0, len=fields.length; l<len; l++) {
-			var field = fields[l];
+		for (let l=0, len=fields.length; l<len; l++) {
+			let field = fields[l]
 			if (Utils.isInt(raField) && raField<fields.length) { // raField can be given as an index
-				raFieldIdx = raField;
-				break;
+				raFieldIdx = raField
+				break
 			}
-			if ( (field.ID && field.ID===raField) || (field.name && field.name===raField)) {
-				raFieldIdx = l;
-				break;
+			if ( (field.ID && field.ID===raField) || (field.name && field.name===raField) ) {
+				raFieldIdx = l
+				break
 			}
 		}
 	}
 	if (decField) { // ID or name of dec field given at catalogue creation
-		for (var l=0, len=fields.length; l<len; l++) {
-			var field = fields[l];
+		for (let l=0, len=fields.length; l<len; l++) {
+			let field = fields[l]
 			if (Utils.isInt(decField) && decField<fields.length) { // decField can be given as an index
-				decFieldIdx = decField;
-				break;
+				decFieldIdx = decField
+				break
 			}
 			if ( (field.ID && field.ID===decField) || (field.name && field.name===decField)) {
-				decFieldIdx = l;
-				break;
+				decFieldIdx = l
+				break
 			}
 		}
 	}
 	// if not already given, let's guess position columns on the basis of UCDs
-	for (var l=0, len=fields.length; l<len; l++) {
-		if (raFieldIdx!=null && decFieldIdx!=null) {
-			break;
-		}
-
-		var field = fields[l];
-		if ( ! raFieldIdx) {
+	for (let l=0, len=fields.length; l<len; l++) {
+		if (raFieldIdx!=undefined && decFieldIdx!=undefined) break
+		let field = fields[l]
+		if (!raFieldIdx) {
 			if (field.ucd) {
-				var ucd = $.trim(field.ucd.toLowerCase());
+				let ucd = $.trim(field.ucd.toLowerCase())
 				if (ucd.indexOf('pos.eq.ra')==0 || ucd.indexOf('pos_eq_ra')==0) {
-					raFieldIdx = l;
-					continue;
+					raFieldIdx = l
+					continue
 				}
 			}
 		}
 
-		if ( ! decFieldIdx) {
+		if (!decFieldIdx) {
 			if (field.ucd) {
-				var ucd = $.trim(field.ucd.toLowerCase());
+				let ucd = $.trim(field.ucd.toLowerCase())
 				if (ucd.indexOf('pos.eq.dec')==0 || ucd.indexOf('pos_eq_dec')==0) {
-					decFieldIdx = l;
-					continue;
+					decFieldIdx = l
+					continue
 				}
 			}
 		}
 	}
 
 	// still not found ? try some common names for RA and Dec columns
-	if (raFieldIdx==null && decFieldIdx==null) {
-		for (var l=0, len=fields.length; l<len; l++) {
-			var field = fields[l];
-			var name = field.name || field.ID || '';
-			name = name.toLowerCase();
-
-			if ( ! raFieldIdx) {
+	if (raFieldIdx==undefined && decFieldIdx==undefined) {
+		for (let l=0, len=fields.length; l<len; l++) {
+			let field = fields[l]
+			let name = (field.name || field.ID || '').toLowerCase()
+			if (!raFieldIdx) {
 				if (name.indexOf('ra')==0 || name.indexOf('_ra')==0 || name.indexOf('ra(icrs)')==0 || name.indexOf('_ra')==0 || name.indexOf('alpha')==0) {
-					raFieldIdx = l;
-					continue;
+					raFieldIdx = l
+					continue
 				}
 			}
-
-			if ( ! decFieldIdx) {
+			if (!decFieldIdx) {
 				if (name.indexOf('dej2000')==0 || name.indexOf('_dej2000')==0 || name.indexOf('de')==0 || name.indexOf('de(icrs)')==0 || name.indexOf('_de')==0 || name.indexOf('delta')==0) {
-					decFieldIdx = l;
-					continue;
+					decFieldIdx = l
+					continue
 				}
 			}
-
 		}
 	}
-
 	// last resort: take two first fieds
 	if (raFieldIdx==null || decFieldIdx==null) {
-		raFieldIdx  = 0;
+		raFieldIdx  = 0
 		decFieldIdx = 1
 	}
-
-	return [raFieldIdx, decFieldIdx];
+	return [raFieldIdx, decFieldIdx]
 }
 
 // TODO : harmoniser parsing avec classe ProgressiveCat
 class Catalog {
-	constructor(options) {
-		options = options || {};
+	constructor(options = {}) {
+		this.type = 'catalog';    	this.name = options.name || "catalog"
+		this.color = options.color || Color.getNextColor()
+		this.sourceSize = options.sourceSize || 8
+		this.markerSize = options.sourceSize || 12
+		this.shape = options.shape || "square"
+		this.maxNbSources = options.limit || undefined
+		this.onClick = options.onClick || undefined
 
-		this.type = 'catalog';    	this.name = options.name || "catalog";
-		this.color = options.color || Color.getNextColor();
-		this.sourceSize = options.sourceSize || 8;
-		this.markerSize = options.sourceSize || 12;
-		this.shape = options.shape || "square";
-		this.maxNbSources = options.limit || undefined;
-		this.onClick = options.onClick || undefined;
+		this.raField = options.raField || undefined // ID or name of the field holding RA
+		this.decField = options.decField || undefined // ID or name of the field holding dec
 
-		this.raField = options.raField || undefined; // ID or name of the field holding RA
-		this.decField = options.decField || undefined; // ID or name of the field holding dec
+		this.indexationNorder = 5 // à quel niveau indexe-t-on les sources
+		this.sources = []
+		this.hpxIdx = new HealpixIndex(this.indexationNorder)
+		this.hpxIdx.init()
 
-		this.indexationNorder = 5; // à quel niveau indexe-t-on les sources
-		this.sources = [];
-		this.hpxIdx = new HealpixIndex(this.indexationNorder);
-		this.hpxIdx.init();
-
-		this.displayLabel = options.displayLabel || false;
-		this.labelColor = options.labelColor || this.color;
-		this.labelFont = options.labelFont || '10px sans-serif';
+		this.displayLabel = options.displayLabel || false
+		this.labelColor = options.labelColor || this.color
+		this.labelFont = options.labelFont || '10px sans-serif'
 		if (this.displayLabel) {
-			this.labelColumn = options.labelColumn;
+			this.labelColumn = options.labelColumn
 			if (!this.labelColumn) {
-				this.displayLabel = false;
+				this.displayLabel = false
 			}
 		}
 
 		if (this.shape instanceof Image || this.shape instanceof HTMLCanvasElement) {
-			this.sourceSize = this.shape.width;
+			this.sourceSize = this.shape.width
 		}
 		this._shapeIsFunction = false; // if true, the shape is a function drawing on the canvas
 		if ($.isFunction(this.shape)) {
-			this._shapeIsFunction = true;
+			this._shapeIsFunction = true
 		}
 
-		this.selectionColor = '#00ff00';
-
+		this.selectionColor = '#00ff00'
 
 		// create this.cacheCanvas
 		// cacheCanvas permet de ne créer le path de la source qu'une fois, et de le réutiliser (cf. http://simonsarris.com/blog/427-increasing-performance-by-caching-paths-on-canvas)
-		this.updateShape(options);
+		this.updateShape(options)
 
-		this.cacheMarkerCanvas = document.createElement('canvas');
-		this.cacheMarkerCanvas.width = this.markerSize;
-		this.cacheMarkerCanvas.height = this.markerSize;
-		var cacheMarkerCtx = this.cacheMarkerCanvas.getContext('2d');
-		cacheMarkerCtx.fillStyle = this.color;
-		cacheMarkerCtx.beginPath();
-		var half = (this.markerSize)/2.;
-		cacheMarkerCtx.arc(half, half, half-2, 0, 2 * Math.PI, false);
-		cacheMarkerCtx.fill();
-		cacheMarkerCtx.lineWidth = 2;
-		cacheMarkerCtx.strokeStyle = '#ccc';
-		cacheMarkerCtx.stroke();
+		this.cacheMarkerCanvas = document.createElement('canvas')
+		this.cacheMarkerCanvas.width = this.markerSize
+		this.cacheMarkerCanvas.height = this.markerSize
+		let cacheMarkerCtx = this.cacheMarkerCanvas.getContext('2d')
+		cacheMarkerCtx.fillStyle = this.color
+		cacheMarkerCtx.beginPath()
+		let half = (this.markerSize)/2.
+		cacheMarkerCtx.arc(half, half, half-2, 0, 2 * Math.PI, false)
+		cacheMarkerCtx.fill()
+		cacheMarkerCtx.lineWidth = 2
+		cacheMarkerCtx.strokeStyle = '#ccc'
+		cacheMarkerCtx.stroke()
 
-
-		this.isShowing = true;
+		this.isShowing = true
 	}
 
 	static createShape(shapeName, color, sourceSize) {
 		if (shapeName instanceof Image || shapeName instanceof HTMLCanvasElement) { // in this case, the shape is already created
-			return shapeName;
+			return shapeName
 		}
-		var c = document.createElement('canvas');
-		c.width = c.height = sourceSize;
-		var ctx= c.getContext('2d');
-		ctx.beginPath();
-		ctx.strokeStyle = color;
-		ctx.lineWidth = 2.0;
+		let c = document.createElement('canvas')
+		c.width = c.height = sourceSize
+		let ctx= c.getContext('2d')
+		ctx.beginPath()
+		ctx.strokeStyle = color
+		ctx.lineWidth = 2.0
 		if (shapeName=="plus") {
-			ctx.moveTo(sourceSize/2., 0);
-			ctx.lineTo(sourceSize/2., sourceSize);
-			ctx.stroke();
+			ctx.moveTo(sourceSize/2., 0)
+			ctx.lineTo(sourceSize/2., sourceSize)
+			ctx.stroke()
 
-			ctx.moveTo(0, sourceSize/2.);
-			ctx.lineTo(sourceSize, sourceSize/2.);
-			ctx.stroke();
+			ctx.moveTo(0, sourceSize/2.)
+			ctx.lineTo(sourceSize, sourceSize/2.)
+			ctx.stroke()
 		}
 		else if (shapeName=="cross") {
-			ctx.moveTo(0, 0);
-			ctx.lineTo(sourceSize-1, sourceSize-1);
-			ctx.stroke();
+			ctx.moveTo(0, 0)
+			ctx.lineTo(sourceSize-1, sourceSize-1)
+			ctx.stroke()
 
-			ctx.moveTo(sourceSize-1, 0);
-			ctx.lineTo(0, sourceSize-1);
-			ctx.stroke();
+			ctx.moveTo(sourceSize-1, 0)
+			ctx.lineTo(0, sourceSize-1)
+			ctx.stroke()
 		}
 		else if (shapeName=="rhomb") {
-			ctx.moveTo(sourceSize/2, 0);
-			ctx.lineTo(0, sourceSize/2);
-			ctx.lineTo(sourceSize/2, sourceSize);
-			ctx.lineTo(sourceSize, sourceSize/2);
-			ctx.lineTo(sourceSize/2, 0);
-			ctx.stroke();
+			ctx.moveTo(sourceSize/2, 0)
+			ctx.lineTo(0, sourceSize/2)
+			ctx.lineTo(sourceSize/2, sourceSize)
+			ctx.lineTo(sourceSize, sourceSize/2)
+			ctx.lineTo(sourceSize/2, 0)
+			ctx.stroke()
 		}
 		else if (shapeName=="triangle") {
-			ctx.moveTo(sourceSize/2, 0);
-			ctx.lineTo(0, sourceSize-1);
-			ctx.lineTo(sourceSize-1, sourceSize-1);
-			ctx.lineTo(sourceSize/2, 0);
-			ctx.stroke();
+			ctx.moveTo(sourceSize/2, 0)
+			ctx.lineTo(0, sourceSize-1)
+			ctx.lineTo(sourceSize-1, sourceSize-1)
+			ctx.lineTo(sourceSize/2, 0)
+			ctx.stroke()
 		}
 		else if (shapeName=="circle") {
-			ctx.arc(sourceSize/2, sourceSize/2, sourceSize/2 - 1, 0, 2*Math.PI, true);
-			ctx.stroke();
+			ctx.arc(sourceSize/2, sourceSize/2, sourceSize/2 - 1, 0, 2*Math.PI, true)
+			ctx.stroke()
 		}
 		else { // default shape: square
-			ctx.moveTo(1, 0);
-			ctx.lineTo(1,  sourceSize-1);
-			ctx.lineTo( sourceSize-1,  sourceSize-1);
-			ctx.lineTo( sourceSize-1, 1);
-			ctx.lineTo(1, 1);
-			ctx.stroke();
+			ctx.moveTo(1, 0)
+			ctx.lineTo(1,  sourceSize-1)
+			ctx.lineTo( sourceSize-1,  sourceSize-1)
+			ctx.lineTo( sourceSize-1, 1)
+			ctx.lineTo(1, 1)
+			ctx.stroke()
 		}
 
-		return c;
+		return c
 
 	}
 
@@ -253,124 +239,118 @@ class Catalog {
 
 		// adapted from votable.js
 		function getPrefix($xml) {
-			var prefix;
+			let prefix
 			// If Webkit chrome/safari/... (no need prefix)
 			if($xml.find('RESOURCE').length>0) {
-				prefix = '';
+				prefix = ''
 			}
 			else {
 				// Select all data in the document
-				prefix = $xml.find("*").first();
+				prefix = $xml.find("*").first()
 
-				if (prefix.length==0) {
-					return '';
-				}
+				if (prefix.length==0) return ''
 
-				// get name of the first tag
-				prefix = prefix.prop("tagName");
+				prefix = prefix.prop("tagName") // get name of the first tag
 
-				var idx = prefix.indexOf(':');
+				let idx = prefix.indexOf(':')
 
-				prefix = prefix.substring(0, idx) + "\\:";
-
-
+				prefix = prefix.substring(0, idx) + "\\:"
 			}
-
-			return prefix;
+			return prefix
 		}
 
 		function doParseVOTable(xml, callback) {
-			xml = xml.replace(/^\s+/g, ''); // we need to trim whitespaces at start of document
-			var attributes = ["name", "ID", "ucd", "utype", "unit", "datatype", "arraysize", "width", "precision"];
+			xml = xml.replace(/^\s+/g, '') // we need to trim whitespaces at start of document
+			let attributes = ["name", "ID", "ucd", "utype", "unit", "datatype", "arraysize", "width", "precision"]
 
-			var fields = [];
-			var k = 0;
-			var $xml = $($.parseXML(xml));
-			var prefix = getPrefix($xml);
+			let fields = []
+			let k = 0
+			let $xml = $($.parseXML(xml))
+			let prefix = getPrefix($xml)
 			$xml.find(prefix + "FIELD").each(function() {
-				var f = {};
-				for (var i=0; i<attributes.length; i++) {
-					var attribute = attributes[i];
+				let f = {}
+				for (let i=0; i<attributes.length; i++) {
+					let attribute = attributes[i]
 					if ($(this).attr(attribute)) {
-						f[attribute] = $(this).attr(attribute);
+						f[attribute] = $(this).attr(attribute)
 					}
 				}
 				if ( ! f.ID) {
-					f.ID = "col_" + k;
+					f.ID = "col_" + k
 				}
-				fields.push(f);
-				k++;
-			});
+				fields.push(f)
+				k++
+			})
 
-			var raDecFieldIdxes = findRADecFields(fields, raField, decField);
-			var raFieldIdx,  decFieldIdx;
-			raFieldIdx = raDecFieldIdxes[0];
-			decFieldIdx = raDecFieldIdxes[1];
+			let raDecFieldIdxes = findRADecFields(fields, raField, decField)
+			let raFieldIdx,  decFieldIdx
+			raFieldIdx = raDecFieldIdxes[0]
+			decFieldIdx = raDecFieldIdxes[1]
 
-			var sources = [];
+			let sources = []
 
-			var coo = new Coo();
-			var ra, dec;
+			let coo = new Coo()
+			let ra, dec
 			$xml.find(prefix + "TR").each(function() {
-			   var mesures = {};
-			   var k = 0;
-			   $(this).find(prefix + "TD").each(function() {
-				   var key = fields[k].name ? fields[k].name : fields[k].id;
-				   mesures[key] = $(this).text();
-				   k++;
-			   });
-			   var keyRa = fields[raFieldIdx].name ? fields[raFieldIdx].name : fields[raFieldIdx].id;
-			   var keyDec = fields[decFieldIdx].name ? fields[decFieldIdx].name : fields[decFieldIdx].id;
+				let mesures = {}
+				let k = 0
+				$(this).find(prefix + "TD").each(function() {
+					let key = fields[k].name ? fields[k].name : fields[k].id
+					mesures[key] = $(this).text()
+					k++
+				})
+				let keyRa = fields[raFieldIdx].name ? fields[raFieldIdx].name : fields[raFieldIdx].id
+				let keyDec = fields[decFieldIdx].name ? fields[decFieldIdx].name : fields[decFieldIdx].id
 
-			   if (Utils.isNumber(mesures[keyRa]) && Utils.isNumber(mesures[keyDec])) {
-				   ra = parseFloat(mesures[keyRa]);
-				   dec = parseFloat(mesures[keyDec]);
-			   }
-			   else {
-				   coo.parse(mesures[keyRa] + " " + mesures[keyDec]);
-				   ra = coo.lon;
-				   dec = coo.lat;
-			   }
-			   sources.push(new cds.Source(ra, dec, mesures));
-			   if (maxNbSources && sources.length==maxNbSources) {
-				   return false; // break the .each loop
-			   }
+				if (Utils.isNumber(mesures[keyRa]) && Utils.isNumber(mesures[keyDec])) {
+					ra = parseFloat(mesures[keyRa])
+					dec = parseFloat(mesures[keyDec])
+				}
+				else {
+					coo.parse(mesures[keyRa] + " " + mesures[keyDec])
+					ra = coo.lon
+					dec = coo.lat
+				}
+				sources.push(new cds.Source(ra, dec, mesures))
+				if (maxNbSources && sources.length==maxNbSources) {
+					return false // break the .each loop
+				}
 
-			});
+			})
 			if (callback) {
-				callback(sources);
+				callback(sources)
 			}
 		}
 
-		var ajax = Utils.getAjaxObject(url, 'GET', 'text', useProxy);
+		let ajax = Utils.getAjaxObject(url, 'GET', 'text', useProxy)
 		ajax.done(function(xml) {
-			doParseVOTable(xml, callback);
-		});
+			doParseVOTable(xml, callback)
+		})
 	}
 
 	// API
 	updateShape(options) {
-		options = options || {};
-		this.color = options.color || this.color || Color.getNextColor();
-		this.sourceSize = options.sourceSize || this.sourceSize || 6;
-		this.shape = options.shape || this.shape || "square";
+		options = options || {}
+		this.color = options.color || this.color || Color.getNextColor()
+		this.sourceSize = options.sourceSize || this.sourceSize || 6
+		this.shape = options.shape || this.shape || "square"
 
-		this.selectSize = this.sourceSize + 2;
+		this.selectSize = this.sourceSize + 2
 
-		this.cacheCanvas = cds.Catalog.createShape(this.shape, this.color, this.sourceSize);
-		this.cacheSelectCanvas = cds.Catalog.createShape('square', this.selectionColor, this.selectSize);
+		this.cacheCanvas = cds.Catalog.createShape(this.shape, this.color, this.sourceSize)
+		this.cacheSelectCanvas = cds.Catalog.createShape('square', this.selectionColor, this.selectSize)
 
-		this.reportChange();
+		this.reportChange()
 	}
 
 	// API
 	addSources(sourcesToAdd) {
-		sourcesToAdd = [].concat(sourcesToAdd); // make sure we have an array and not an individual source
-		this.sources = this.sources.concat(sourcesToAdd);
-		for (var k=0, len=sourcesToAdd.length; k<len; k++) {
-			sourcesToAdd[k].setCatalog(this);
+		sourcesToAdd = [].concat(sourcesToAdd) // make sure we have an array and not an individual source
+		this.sources = this.sources.concat(sourcesToAdd)
+		for (let k=0, len=sourcesToAdd.length; k<len; k++) {
+			sourcesToAdd[k].setCatalog(this)
 		}
-		this.reportChange();
+		this.reportChange()
 	}
 
 	// API
@@ -380,40 +360,40 @@ class Catalog {
 	// @param columnNames: array with names of the columns
 	// @array: 2D-array, each item being a 1d-array with the same number of items as columnNames
 	addSourcesAsArray(columnNames, array) {
-		var fields = [];
+		let fields = []
 		for (var colIdx=0 ; colIdx<columnNames.length; colIdx++) {
-			fields.push({name: columnNames[colIdx]});
+			fields.push({name: columnNames[colIdx]})
 		}
-		var raDecFieldIdxes = findRADecFields(fields, this.raField, this.decField);
-		var raFieldIdx,  decFieldIdx;
-		raFieldIdx = raDecFieldIdxes[0];
-		decFieldIdx = raDecFieldIdxes[1];
+		let raDecFieldIdxes = findRADecFields(fields, this.raField, this.decField)
+		let raFieldIdx,  decFieldIdx
+		raFieldIdx = raDecFieldIdxes[0]
+		decFieldIdx = raDecFieldIdxes[1]
 
 
-		var newSources = [];
-		var coo = new Coo();
-		var ra, dec, row, dataDict;
+		let newSources = []
+		let coo = new Coo()
+		let ra, dec, row, dataDict
 		for (var rowIdx=0 ; rowIdx<array.length ; rowIdx++) {
-			row = array[rowIdx];
+			row = array[rowIdx]
 			if (Utils.isNumber(row[raFieldIdx]) && Utils.isNumber(row[decFieldIdx])) {
-				   ra = parseFloat(row[raFieldIdx]);
-				   dec = parseFloat(row[decFieldIdx]);
+				ra = parseFloat(row[raFieldIdx])
+				dec = parseFloat(row[decFieldIdx])
 			}
-			   else {
-				   coo.parse(row[raFieldIdx] + " " + row[decFieldIdx]);
-				   ra = coo.lon;
-				   dec = coo.lat;
-			   }
+			else {
+				coo.parse(row[raFieldIdx] + " " + row[decFieldIdx])
+				ra = coo.lon
+				dec = coo.lat
+			}
 
-			dataDict = {};
+			dataDict = {}
 			for (var colIdx=0 ; colIdx<columnNames.length; colIdx++) {
-				dataDict[columnNames[colIdx]] = row[colIdx];
+				dataDict[columnNames[colIdx]] = row[colIdx]
 			}
 
-			newSources.push(A.source(ra, dec, dataDict));
+			newSources.push(A.source(ra, dec, dataDict))
 		}
 
-		this.addSources(newSources);
+		this.addSources(newSources)
 	}
 
 	// return the current list of Source objects
@@ -421,204 +401,185 @@ class Catalog {
 
 	// TODO : fonction générique traversant la liste des sources
 	selectAll() {
-		if (! this.sources) {
-			return;
-		}
+		if (! this.sources) return
 
 		for (var k=0; k<this.sources.length; k++) {
-			this.sources[k].select();
+			this.sources[k].select()
 		}
 	}
 
 	deselectAll() {
-		if (! this.sources) {
-			return;
-		}
+		if (! this.sources) return
 
 		for (var k=0; k<this.sources.length; k++) {
-			this.sources[k].deselect();
+			this.sources[k].deselect()
 		}
 	}
 
 	// return a source by index
 	getSource(idx) {
 		if (idx<this.sources.length) {
-			return this.sources[idx];
+			return this.sources[idx]
 		}
 		else {
-			return null;
+			return null
 		}
 	}
 
 	setView(view) {
-		this.view = view;
-		this.reportChange();
+		this.view = view
+		this.reportChange()
 	}
 
 	// remove a source
 	remove(source) {
-		var idx = this.sources.indexOf(source);
-		if (idx<0) {
-			return;
-		}
+		let idx = this.sources.indexOf(source)
+		if (idx<0) return
 
-		this.sources[idx].deselect();
-		this.sources.splice(idx, 1);
+		this.sources[idx].deselect()
+		this.sources.splice(idx, 1)
 
-		this.reportChange();
+		this.reportChange()
 	}
 
 	removeAll() { this.sources = [] } // TODO : RAZ de l'index
 	clear() { return this.removeAll() }
 
 	draw(ctx, projection, frame, width, height, largestDim, zoomFactor) {
-		if (! this.isShowing) {
-			return;
-		}
+		if (! this.isShowing) return
 		// tracé simple
-		//ctx.strokeStyle= this.color;
+		//ctx.strokeStyle= this.color
 
-		//ctx.lineWidth = 1;
-		//ctx.beginPath();
+		//ctx.lineWidth = 1
+		//ctx.beginPath()
 		if (this._shapeIsFunction) {
-			ctx.save();
+			ctx.save()
 		}
-		var sourcesInView = [];
+		let sourcesInView = []
  		for (var k=0, len = this.sources.length; k<len; k++) {
-			var inView = cds.Catalog.drawSource(this, this.sources[k], ctx, projection, frame, width, height, largestDim, zoomFactor);
+			let inView = cds.Catalog.drawSource(this, this.sources[k], ctx, projection, frame, width, height, largestDim, zoomFactor)
 			if (inView) {
-				sourcesInView.push(this.sources[k]);
+				sourcesInView.push(this.sources[k])
 			}
 		}
 		if (this._shapeIsFunction) {
-			ctx.restore();
+			ctx.restore()
 		}
-		//ctx.stroke();
+		//ctx.stroke()
 
 		// tracé sélection
-		ctx.strokeStyle= this.selectionColor;
-		//ctx.beginPath();
-		var source;
+		ctx.strokeStyle= this.selectionColor
+		//ctx.beginPath()
+		let source
 		for (var k=0, len = sourcesInView.length; k<len; k++) {
-			source = sourcesInView[k];
+			source = sourcesInView[k]
 			if (! source.isSelected) {
-				continue;
+				continue
 			}
-			cds.Catalog.drawSourceSelection(this, source, ctx);
+			cds.Catalog.drawSourceSelection(this, source, ctx)
 
 		}
 		// NEEDED ?
-		//ctx.stroke();
+		//ctx.stroke()
 
 		// tracé label
 		if (this.displayLabel) {
-			ctx.fillStyle = this.labelColor;
-			ctx.font = this.labelFont;
+			ctx.fillStyle = this.labelColor
+			ctx.font = this.labelFont
 			for (var k=0, len = sourcesInView.length; k<len; k++) {
-				cds.Catalog.drawSourceLabel(this, sourcesInView[k], ctx);
+				cds.Catalog.drawSourceLabel(this, sourcesInView[k], ctx)
 			}
 		}
 	}
 
 	static drawSource(catalogInstance, s, ctx, projection, frame, width, height, largestDim, zoomFactor) {
 		if (! s.isShowing) {
-			return false;
+			return false
 		}
-		var sourceSize = catalogInstance.sourceSize;
+		let sourceSize = catalogInstance.sourceSize
 		// TODO : we could factorize this code with Aladin.world2pix
-		var xy;
+		let xy
 		if (frame.system != CooFrameEnum.SYSTEMS.J2000) {
-			var lonlat = CooConversion.J2000ToGalactic([s.ra, s.dec]);
-			xy = projection.project(lonlat[0], lonlat[1]);
+			let lonlat = CooConversion.J2000ToGalactic([s.ra, s.dec])
+			xy = projection.project(lonlat[0], lonlat[1])
 		}
 		else {
-			xy = projection.project(s.ra, s.dec);
+			xy = projection.project(s.ra, s.dec)
 		}
 
 		if (xy) {
-			var xyview = AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor, true);
-			var max = s.popup ? 100 : s.sourceSize;
+			let xyview = AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor, true)
+			let max = s.popup ? 100 : s.sourceSize
 			if (xyview) {
 				// TODO : index sources by HEALPix cells at level 3, 4 ?
 
 				// check if source is visible in view
 				if (xyview.vx>(width+max)  || xyview.vx<(0-max) ||
 					xyview.vy>(height+max) || xyview.vy<(0-max)) {
-					s.x = s.y = undefined;
-					return false;
+					s.x = s.y = undefined
+					return false
 				}
 
-				s.x = xyview.vx;
-				s.y = xyview.vy;
+				s.x = xyview.vx
+				s.y = xyview.vy
 				if (catalogInstance._shapeIsFunction) {
-					catalogInstance.shape(s, ctx, catalogInstance.view.getViewParams());
+					catalogInstance.shape(s, ctx, catalogInstance.view.getViewParams())
 				}
 				else if (s.marker && s.useMarkerDefaultIcon) {
-					ctx.drawImage(catalogInstance.cacheMarkerCanvas, s.x-sourceSize/2, s.y-sourceSize/2);
+					ctx.drawImage(catalogInstance.cacheMarkerCanvas, s.x-sourceSize/2, s.y-sourceSize/2)
 				}
 				else {
-					ctx.drawImage(catalogInstance.cacheCanvas, s.x-catalogInstance.cacheCanvas.width/2, s.y-catalogInstance.cacheCanvas.height/2);
+					ctx.drawImage(catalogInstance.cacheCanvas, s.x-catalogInstance.cacheCanvas.width/2, s.y-catalogInstance.cacheCanvas.height/2)
 				}
 
 
 				// has associated popup ?
 				if (s.popup) {
-					s.popup.setPosition(s.x, s.y);
+					s.popup.setPosition(s.x, s.y)
 				}
 
 
 			}
-			return true;
+			return true
 		}
 		else {
-			return false;
+			return false
 		}
 
 	}
 
 	static drawSourceSelection(catalogInstance, s, ctx) {
-		if (!s || !s.isShowing || !s.x || !s.y) {
-			return;
-		}
-		var sourceSize = catalogInstance.selectSize;
-
-		ctx.drawImage(catalogInstance.cacheSelectCanvas, s.x-sourceSize/2, s.y-sourceSize/2);
+		if (!s || !s.isShowing || !s.x || !s.y) return
+		let sourceSize = catalogInstance.selectSize
+		ctx.drawImage(catalogInstance.cacheSelectCanvas, s.x-sourceSize/2, s.y-sourceSize/2)
 	}
 
 	static drawSourceLabel(catalogInstance, s, ctx) {
-		if (!s || !s.isShowing || !s.x || !s.y) {
-			return;
-		}
+		if (!s || !s.isShowing || !s.x || !s.y) return
 
-		var label = s.data[catalogInstance.labelColumn];
-		if (!label) {
-			return;
-		}
+		let label = s.data[catalogInstance.labelColumn]
+		if (!label) return
 
-		ctx.fillText(label, s.x, s.y);
+		ctx.fillText(label, s.x, s.y)
 	}
 
 	// callback function to be called when the status of one of the sources has changed
 	reportChange() { this.view && this.view.requestRedraw() }
 
 	show() {
-		if (this.isShowing) {
-			return;
-		}
-		this.isShowing = true;
-		this.reportChange();
+		if (this.isShowing) return
+		this.isShowing = true
+		this.reportChange()
 	}
 
 	hide() {
-		if (! this.isShowing) {
-			return;
-		}
-		this.isShowing = false;
+		if (! this.isShowing) return
+		this.isShowing = false
 		if (this.view && this.view.popup && this.view.popup.source && this.view.popup.source.catalog==this) {
-			this.view.popup.hide();
+			this.view.popup.hide()
 		}
 
-		this.reportChange();
+		this.reportChange()
 	}
 
 }
