@@ -128,7 +128,7 @@ class ProgressiveCat {
 	}
 
 	// TODO: to be put higher in the class diagram, in a HiPS generic class
-	static readProperties(rootUrl, successCallback, errorCallback) {
+	static readProperties(rootUrl, successCallback, errorCallback = (err)=>{}) {
 		if (!successCallback) return
 
 		let propertiesURL = rootUrl + '/properties'
@@ -139,19 +139,15 @@ class ProgressiveCat {
 			success: function(propertiesTxt) {
 				let props = {}
 				let lines = propertiesTxt.split('\n')
-				for (let k=0; k<lines.length; k++) {
-					let line = lines[k]
+				lines.forEach( line => {
 					let idx = line.indexOf('=')
 					let propName  = $.trim(line.substring(0, idx))
 					let propValue = $.trim(line.substring(idx + 1))
-
 					props[propName] = propValue
-				}
-
+				})
 				successCallback(props)
-
 			},
-			error: (err) => errorCallback && errorCallback(err) // TODO : which parameters should we put in the error callback
+			error: (err) => errorCallback(err) // TODO : which parameters should we put in the error callback
 		})
 	}
 
@@ -160,9 +156,7 @@ class ProgressiveCat {
 	init(view) {
 		let self = this
 		this.view = view
-
 		if (this.maxOrder && this.frameStr) this._loadMetadata()
-
 		else {
 			ProgressiveCat.readProperties(self.rootUrl,
 				(properties) => {
@@ -202,7 +196,6 @@ class ProgressiveCat {
 			method: 'GET',
 			success: function(tsv) {
 				self.order1Sources = getSources(self, tsv, self.fields)
-
 				if (self.order2Sources) {
 					self.isReady = true
 					self._finishInitWhenReady()
@@ -215,7 +208,6 @@ class ProgressiveCat {
 			method: 'GET',
 			success: function(tsv) {
 				self.order2Sources = getSources(self, tsv, self.fields)
-
 				if (self.order1Sources) {
 					self.isReady = true
 					self._finishInitWhenReady()
@@ -276,35 +268,27 @@ class ProgressiveCat {
 		this.drawSources(this.order3Sources, ctx, projection, frame, width, height, largestDim, zoomFactor)
 
 		if (!this.tilesInView) return
-
-		let sources, key, t
-		for (let k=0; k<this.tilesInView.length; k++) {
-			t = this.tilesInView[k]
-			key = t[0] + '-' + t[1]
-			sources = this.sourcesCache.get(key)
+		this.tilesInView.forEach( t => {
+			let key = t[0] + '-' + t[1]
+			let sources = this.sourcesCache.get(key)
 			if (sources) {
 				this.drawSources(sources, ctx, projection, frame, width, height, largestDim, zoomFactor)
 			}
-		}
-
+		})
 	}
 
 	drawSources(sources, ctx, projection, frame, width, height, largestDim, zoomFactor) {
 		if (!sources) return
-		let s
-		for (let k=0, len = sources.length; k<len; k++) {
-			s = sources[k]
+		sources.forEach( s =>{
 			if (!this.filterFn || this.filterFn(s)) {
 				cds.Catalog.drawSource(this, s, ctx, projection, frame, width, height, largestDim, zoomFactor)
 			}
-		}
-		for (let k=0, len = sources.length; k<len; k++) {
-			s = sources[k]
-			if (!s.isSelected) continue
+		})
+		source.filter( s => s.isSelected ).forEach( s => {
 			if (!this.filterFn || this.filterFn(s)) {
 				cds.Catalog.drawSourceSelection(this, s, ctx)
 			}
-		}
+		})
 	}
 
 	getSources() {
@@ -312,40 +296,22 @@ class ProgressiveCat {
 		if (this.order1Sources) ret = ret.concat(this.order1Sources)
 		if (this.order2Sources) ret = ret.concat(this.order2Sources)
 		if (this.order3Sources) ret = ret.concat(this.order3Sources)
-
 		if (this.tilesInView) {
-			let sources, key, t
-			for (let k=0; k<this.tilesInView.length; k++) {
-				t = this.tilesInView[k]
-				key = t[0] + '-' + t[1]
-				sources = this.sourcesCache.get(key)
+			this.tilesInView.forEach( t => {
+				let key = t[0] + '-' + t[1]
+				let sources = this.sourcesCache.get(key)
 				if (sources) ret = ret.concat(sources)
-			}
+			})
 		}
-
 		return ret
 	}
 
 	deselectAll() {
-		if (this.order1Sources) {
-			for (let k=0; k<this.order1Sources.length; k++) {
-				this.order1Sources[k].deselect()
-			}
-		}
+		if (this.order1Sources) this.order1Sources.forEach( s => s.deselect() )
+		if (this.order2Sources) this.order2Sources.forEach( s => s.deselect() )
+		if (this.order3Sources) this.order3Sources.forEach( s => s.deselect() )
 
-		if (this.order2Sources) {
-			for (let k=0; k<this.order2Sources.length; k++) {
-				this.order2Sources[k].deselect()
-			}
-		}
-
-		if (this.order3Sources) {
-			for (let k=0; k<this.order3Sources.length; k++) {
-				this.order3Sources[k].deselect()
-			}
-		}
-		let keys = this.sourcesCache.keys()
-		for (key in keys) {
+		for (let key in this.sourcesCache.keys()) {
 			this.sourcesCache.get(key).forEach( source => source.deselect() )
 		}
 	}
@@ -379,25 +345,17 @@ class ProgressiveCat {
 
 		if (norder<=this.maxOrderAllsky) return // nothing to do, hurrayh !
 		let cells = this.view.getVisibleCells(norder, this.frame)
-		let ipixList, ipix
 		for (let curOrder=3; curOrder<=norder; curOrder++) {
-			ipixList = []
-			for (let k=0; k<cells.length; k++) {
-				ipix = Math.floor(cells[k].ipix / Math.pow(4, norder - curOrder))
+			let ipixList = []
+			cells.forEach( cell => {
+				let ipix = Math.floor(cell.ipix / Math.pow(4, norder - curOrder))
 				if (ipixList.indexOf(ipix)<0) ipixList.push(ipix)
-			}
-
-			// load needed tiles
-			for (let i=0; i<ipixList.length; i++) {
-				this.tilesInView.push([curOrder, ipixList[i]])
-			}
+			})
+			ipixList.forEach( ipix => this.tilesInView.push([curOrder, ipix]) ) // load needed tiles
 		}
 
-		let t, key
-		let self = this
-		for (let k=0; k<this.tilesInView.length; k++) {
-			t = this.tilesInView[k]
-			key = t[0] + '-' + t[1] // t[0] is norder, t[1] is ipix
+		this.tilesInView.forEach( t => {
+			let key = t[0] + '-' + t[1] // t[0] is norder, t[1] is ipix
 			if (!this.sourcesCache.get(key)) {
 				(function(self, norder, ipix) { // wrapping function is needed to be able to retrieve norder and ipix in ajax success function
 					let key = norder + '-' + ipix
@@ -418,7 +376,7 @@ class ProgressiveCat {
 					})
 				})(this, t[0], t[1])
 			}
-		}
+		})
 	}
 
 	reportChange() { // TODO: to be shared with Catalog
