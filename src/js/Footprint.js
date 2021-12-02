@@ -26,9 +26,9 @@
  *
  *****************************************************************************/
 
-Footprint = (function() {
-	// constructor
-	Footprint = function(polygons) {
+class Footprint {
+
+	constructor(polygons) {
 		this.polygons = polygons;
 		this.overlay = null;
 
@@ -37,25 +37,25 @@ Footprint = (function() {
 
 		this.isShowing = true;
 		this.isSelected = false;
-	};
+	}
 
-	Footprint.prototype.setOverlay = function(overlay) {
+	setOverlay(overlay) {
 		this.overlay = overlay;
-	};
+	}
 
-	Footprint.prototype.show = function() {
+	show() {
 		if (this.isShowing) return;
 		this.isShowing = true;
 		if (this.overlay) this.overlay.reportChange();
-	};
+	}
 
-	Footprint.prototype.hide = function() {
+	hide() {
 		if (! this.isShowing) return;
 		this.isShowing = false;
 		if (this.overlay) this.overlay.reportChange();
-	};
+	}
 
-	Footprint.prototype.dispatchClickEvent = function() {
+	dispatchClickEvent() {
 		if (this.overlay) {
 			// footprint selection code adapted from Fabrizio Giordano dev. from Serco for ESA/ESDC
 			//window.dispatchEvent(new CustomEvent("footprintClicked", {
@@ -66,9 +66,9 @@ Footprint = (function() {
 				}
 			}));
 		}
-	};
+	}
 
-	Footprint.prototype.select = function() {
+	select() {
 		if (this.isSelected) return;
 		this.isSelected = true;
 		if (this.overlay) {
@@ -85,13 +85,12 @@ Footprint = (function() {
 
 			this.overlay.reportChange();
 		}
-	};
+	}
 
-	Footprint.prototype.deselect = function() {
+	deselect() {
 		if (! this.isSelected) return;
 		this.isSelected = false;
 		if (this.overlay) this.overlay.reportChange();
-	};
+	}
 
-	return Footprint;
-})();
+}
