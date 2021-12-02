@@ -27,9 +27,9 @@
  *****************************************************************************/
 
 // TODO : Circle and Footprint should inherit from the same root object
-Circle = (function() {
-	// constructor
-	Circle = function(centerRaDec, radiusDegrees, options) {
+class Circle {
+
+	constructor(centerRaDec, radiusDegrees, options) {
 		options = options || {};
 
 		this.color = options['color'] || undefined;
@@ -43,25 +43,25 @@ Circle = (function() {
 
 		this.isShowing = true;
 		this.isSelected = false;
-	};
+	}
 
-	Circle.prototype.setOverlay = function(overlay) {
+	setOverlay(overlay) {
 		this.overlay = overlay;
-	};
+	}
 
-	Circle.prototype.show = function() {
+	show() {
 		if (this.isShowing) return;
 		this.isShowing = true;
 		if (this.overlay) this.overlay.reportChange();
-	};
+	}
 
-	Circle.prototype.hide = function() {
+	hide() {
 		if (! this.isShowing) return;
 		this.isShowing = false;
 		if (this.overlay) this.overlay.reportChange();
-	};
+	}
 
-	Circle.prototype.dispatchClickEvent = function() {
+	dispatchClickEvent() {
 		if (this.overlay) {
 			// footprint selection code adapted from Fabrizio Giordano dev. from Serco for ESA/ESDC
 			//window.dispatchEvent(new CustomEvent("footprintClicked", {
@@ -72,9 +72,9 @@ Circle = (function() {
 				}
 			}));
 		}
-	};
+	}
 
-	Circle.prototype.select = function() {
+	select() {
 		if (this.isSelected) return;
 		this.isSelected = true;
 		if (this.overlay) {
@@ -88,26 +88,26 @@ Circle = (function() {
 */
 			this.overlay.reportChange();
 		}
-	};
+	}
 
-	Circle.prototype.deselect = function() {
+	deselect() {
 		if (! this.isSelected) return;
 		this.isSelected = false;
 		if (this.overlay) this.overlay.reportChange();
-	};
+	}
 
-	Circle.prototype.setCenter = function(centerRaDec) {
+	setCenter(centerRaDec) {
 		this.centerRaDec = centerRaDec;
 		if (this.overlay) this.overlay.reportChange();
-	};
+	}
 
-	Circle.prototype.setRadius = function(radiusDegrees) {
+	setRadius(radiusDegrees) {
 		this.radiusDegrees = radiusDegrees;
 		if (this.overlay) this.overlay.reportChange();
-	};
+	}
 
 	// TODO
-	Circle.prototype.draw = function(ctx, projection, frame, width, height, largestDim, zoomFactor, noStroke) {
+	draw(ctx, projection, frame, width, height, largestDim, zoomFactor, noStroke) {
 		if (! this.isShowing) return;
 
 		noStroke = noStroke===true || false;
@@ -154,5 +154,4 @@ Circle = (function() {
 		if (!noStroke) ctx.stroke();
 	};
 
-	return Circle;
-})();
+}
