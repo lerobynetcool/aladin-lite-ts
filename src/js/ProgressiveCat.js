@@ -98,14 +98,12 @@ function getSources(instance, csv, fields) {
 // TODO: index sources according to their HEALPix ipix
 // TODO : merge parsing with class Catalog
 class ProgressiveCat {
+	type = 'progressivecat'
 
 	// TODO : test if CORS support. If no, need to pass through a proxy
 	// currently, we suppose CORS is supported
 
-	constructor(rootUrl, frameStr, maxOrder, options) {
-		options = options || {}
-
-		this.type = 'progressivecat'
+	constructor(rootUrl, frameStr, maxOrder, options = {}) {
 
 		this.rootUrl = rootUrl // TODO: method to sanitize rootURL (absolute, no duplicate slashes, remove end slash if existing)
 		// fast fix for HTTPS support --> will work for all HiPS served by CDS
