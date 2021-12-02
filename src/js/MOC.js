@@ -9,8 +9,97 @@
  *
  *****************************************************************************/
 
-MOC = (function() {
-	MOC = function(options) {
+function log2(val) {
+	return Math.log(val) / Math.LN2;
+}
+
+function drawCorners(ctx, xyCorners) {
+	ctx.moveTo(xyCorners[0].vx, xyCorners[0].vy);
+	ctx.lineTo(xyCorners[1].vx, xyCorners[1].vy);
+	ctx.lineTo(xyCorners[2].vx, xyCorners[2].vy);
+	ctx.lineTo(xyCorners[3].vx, xyCorners[3].vy);
+	ctx.lineTo(xyCorners[0].vx, xyCorners[0].vy);
+}
+
+// remove duplicate items from array a
+function uniq(a) {
+	var seen = {};
+	var out = [];
+	var len = a.length;
+	var j = 0;
+	for (var i = 0; i < len; i++) {
+		var item = a[i];
+		if (seen[item] !== 1) {
+			seen[item] = 1;
+			out[j++] = item;
+		}
+	}
+
+	return out;
+};
+
+// TODO: merge with what is done in View.getVisibleCells
+var _spVec = new SpatialVector();
+var getXYCorners = function(nside, ipix, viewFrame, surveyFrame, width, height, largestDim, zoomFactor, projection) {
+	var cornersXYView = [];
+	var cornersXY = [];
+
+	var spVec = _spVec;
+
+	var corners = HealpixCache.corners_nest(ipix, nside);
+	for (var k=0; k<4; k++) {
+		spVec.setXYZ(corners[k].x, corners[k].y, corners[k].z);
+
+		// need for frame transformation ?
+		if (surveyFrame && surveyFrame.system != viewFrame.system) {
+			if (surveyFrame.system == CooFrameEnum.SYSTEMS.J2000) {
+				var radec = CooConversion.J2000ToGalactic([spVec.ra(), spVec.dec()]);
+				lon = radec[0];
+				lat = radec[1];
+			}
+			else if (surveyFrame.system == CooFrameEnum.SYSTEMS.GAL) {
+				var radec = CooConversion.GalacticToJ2000([spVec.ra(), spVec.dec()]);
+				lon = radec[0];
+				lat = radec[1];
+			}
+		}
+		else {
+			lon = spVec.ra();
+			lat = spVec.dec();
+		}
+
+		cornersXY[k] = projection.project(lon, lat);
+	}
+
+
+	if (cornersXY[0] == null ||  cornersXY[1] == null  ||  cornersXY[2] == null ||  cornersXY[3] == null ) return null;
+
+	for (var k=0; k<4; k++) {
+		cornersXYView[k] = AladinUtils.xyToView(cornersXY[k].X, cornersXY[k].Y, width, height, largestDim, zoomFactor);
+	}
+
+	var indulge = 10;
+	// detect pixels outside view. Could be improved !
+	// we minimize here the number of cells returned
+	if( cornersXYView[0].vx<0 && cornersXYView[1].vx<0 && cornersXYView[2].vx<0 &&cornersXYView[3].vx<0) {
+		return null;
+	}
+	if( cornersXYView[0].vy<0 && cornersXYView[1].vy<0 && cornersXYView[2].vy<0 &&cornersXYView[3].vy<0) {
+		return null;
+	}
+	if( cornersXYView[0].vx>=width && cornersXYView[1].vx>=width && cornersXYView[2].vx>=width &&cornersXYView[3].vx>=width) {
+		return null;
+	}
+	if( cornersXYView[0].vy>=height && cornersXYView[1].vy>=height && cornersXYView[2].vy>=height &&cornersXYView[3].vy>=height) {
+		return null;
+	}
+
+	cornersXYView = AladinUtils.grow2(cornersXYView, 1);
+	return cornersXYView;
+};
+
+class MOC {
+	constructor(options) {
 		this.order = undefined;
 
 		this.type = 'moc';
@@ -40,21 +129,17 @@ MOC = (function() {
 		this.ready = false;
 	}
 
-	function log2(val) {
-		return Math.log(val) / Math.LN2;
-	}
-
 	// max norder we can currently handle (limitation of healpix.js)
-	MOC.MAX_NORDER = 13; // NSIDE = 8192
+	static MAX_NORDER = 13; // NSIDE = 8192
 
-	MOC.LOWRES_MAXORDER = 6; // 5 or 6 ??
-	MOC.HIGHRES_MAXORDER = 11; // ??
+	static LOWRES_MAXORDER = 6; // 5 or 6 ??
+	static HIGHRES_MAXORDER = 11; // ??
 
 	// TODO: options to modifiy this ?
-	MOC.PIVOT_FOV = 30; // when do we switch from low res cells to high res cells (fov in degrees)
+	static PIVOT_FOV = 30; // when do we switch from low res cells to high res cells (fov in degrees)
 
 	// at end of parsing, we need to remove duplicates from the 2 indexes
-	MOC.prototype._removeDuplicatesFromIndexes = function() {
+	removeDuplicatesFromIndexes() {
 		var a, aDedup;
 		for (var k=0; k<768; k++) {
 			for (var key in this._highResIndexOrder3[k]) {
@@ -72,7 +157,7 @@ MOC = (function() {
 	}
 
 	// add pixel (order, ipix)
-	MOC.prototype._addPix = function(order, ipix) {
+	addPix(order, ipix) {
 		var ipixOrder3 = Math.floor( ipix * Math.pow(4, (3 - order)) );
 		// fill low and high level cells
 		// 1. if order <= LOWRES_MAXORDER, just store value in low and high res cells
@@ -122,22 +207,21 @@ MOC = (function() {
 		}
 
 		this.nbCellsDeepestLevel += Math.pow(4, (this.order - order));
-	};
-
+	}
 
 	/**
 	 *  Return a value between 0 and 1 denoting the fraction of the sky
 	 *  covered by the MOC
 	 */
-	MOC.prototype.skyFraction = function() {
+	skyFraction() {
 		return this.nbCellsDeepestLevel / (12 * Math.pow(4, this.order));
-	};
+	}
 
 	/**
 	 * set MOC data by parsing a MOC serialized in JSON
 	 * (as defined in IVOA MOC document, section 3.1.1)
 	 */
-	MOC.prototype.dataFromJSON = function(jsonMOC) {
+	dataFromJSON(jsonMOC) {
 		var order, ipix;
 		for (var orderStr in jsonMOC) {
 			if (jsonMOC.hasOwnProperty(orderStr)) {
@@ -154,12 +238,12 @@ MOC = (function() {
 
 		this.reportChange();
 		this.ready = true;
-	};
+	}
 
 	/**
 	 * set MOC data by parsing a URL pointing to a FITS MOC file
 	 */
-	MOC.prototype.dataFromFITSURL = function(mocURL, successCallback) {
+	dataFromFITSURL(mocURL, successCallback) {
 		var self = this;
 		var callback = function() {
 			// note: in the callback, 'this' refers to the FITS instance
@@ -220,22 +304,22 @@ MOC = (function() {
 
 		// instantiate the FITS object which will fetch the URL passed as parameter
 		new astro.FITS(this.dataURL, callback);
-	};
+	}
 
-	MOC.prototype.setView = function(view) {
+	setView(view) {
 		this.view = view;
 		this.reportChange();
-	};
+	}
 
-	MOC.prototype.draw = function(ctx, projection, viewFrame, width, height, largestDim, zoomFactor, fov) {
+	draw(ctx, projection, viewFrame, width, height, largestDim, zoomFactor, fov) {
 		if (!this.isShowing || !this.ready) return;
 
 		var mocCells = fov > MOC.PIVOT_FOV && this.adaptativeDisplay ? this._lowResIndexOrder3 : this._highResIndexOrder3;
 
 		this._drawCells(ctx, mocCells, fov, projection, viewFrame, CooFrameEnum.J2000, width, height, largestDim, zoomFactor);
-	};
+	}
 
-	MOC.prototype._drawCells = function(ctx, mocCellsIdxOrder3, fov, projection, viewFrame, surveyFrame, width, height, largestDim, zoomFactor) {
+	drawCells(ctx, mocCellsIdxOrder3, fov, projection, viewFrame, surveyFrame, width, height, largestDim, zoomFactor) {
 		ctx.lineWidth = this.lineWidth;
 		// if opacity==1, we draw solid lines, else we fill each HEALPix cell
 		if (this.opacity==1) ctx.strokeStyle = this.color;
@@ -312,113 +396,28 @@ MOC = (function() {
 			ctx.fill();
 			ctx.globalAlpha = 1.0;
 		}
-	};
-
-	var drawCorners = function(ctx, xyCorners) {
-		ctx.moveTo(xyCorners[0].vx, xyCorners[0].vy);
-		ctx.lineTo(xyCorners[1].vx, xyCorners[1].vy);
-		ctx.lineTo(xyCorners[2].vx, xyCorners[2].vy);
-		ctx.lineTo(xyCorners[3].vx, xyCorners[3].vy);
-		ctx.lineTo(xyCorners[0].vx, xyCorners[0].vy);
 	}
 
-	// remove duplicate items from array a
-	var uniq = function(a) {
-		var seen = {};
-		var out = [];
-		var len = a.length;
-		var j = 0;
-		for (var i = 0; i < len; i++) {
-			var item = a[i];
-			if (seen[item] !== 1) {
-				seen[item] = 1;
-				out[j++] = item;
-			}
-		}
-
-		return out;
-	};
-
-	// TODO: merge with what is done in View.getVisibleCells
-	var _spVec = new SpatialVector();
-	var getXYCorners = function(nside, ipix, viewFrame, surveyFrame, width, height, largestDim, zoomFactor, projection) {
-		var cornersXYView = [];
-		var cornersXY = [];
-
-		var spVec = _spVec;
-
-		var corners = HealpixCache.corners_nest(ipix, nside);
-		for (var k=0; k<4; k++) {
-			spVec.setXYZ(corners[k].x, corners[k].y, corners[k].z);
-
-			// need for frame transformation ?
-			if (surveyFrame && surveyFrame.system != viewFrame.system) {
-				if (surveyFrame.system == CooFrameEnum.SYSTEMS.J2000) {
-					var radec = CooConversion.J2000ToGalactic([spVec.ra(), spVec.dec()]);
-					lon = radec[0];
-					lat = radec[1];
-				}
-				else if (surveyFrame.system == CooFrameEnum.SYSTEMS.GAL) {
-					var radec = CooConversion.GalacticToJ2000([spVec.ra(), spVec.dec()]);
-					lon = radec[0];
-					lat = radec[1];
-				}
-			}
-			else {
-				lon = spVec.ra();
-				lat = spVec.dec();
-			}
-
-			cornersXY[k] = projection.project(lon, lat);
-		}
-
-
-		if (cornersXY[0] == null ||  cornersXY[1] == null  ||  cornersXY[2] == null ||  cornersXY[3] == null ) return null;
-
-		for (var k=0; k<4; k++) {
-			cornersXYView[k] = AladinUtils.xyToView(cornersXY[k].X, cornersXY[k].Y, width, height, largestDim, zoomFactor);
-		}
-
-		var indulge = 10;
-		// detect pixels outside view. Could be improved !
-		// we minimize here the number of cells returned
-		if( cornersXYView[0].vx<0 && cornersXYView[1].vx<0 && cornersXYView[2].vx<0 &&cornersXYView[3].vx<0) {
-			return null;
-		}
-		if( cornersXYView[0].vy<0 && cornersXYView[1].vy<0 && cornersXYView[2].vy<0 &&cornersXYView[3].vy<0) {
-			return null;
-		}
-		if( cornersXYView[0].vx>=width && cornersXYView[1].vx>=width && cornersXYView[2].vx>=width &&cornersXYView[3].vx>=width) {
-			return null;
-		}
-		if( cornersXYView[0].vy>=height && cornersXYView[1].vy>=height && cornersXYView[2].vy>=height &&cornersXYView[3].vy>=height) {
-			return null;
-		}
-
-		cornersXYView = AladinUtils.grow2(cornersXYView, 1);
-		return cornersXYView;
-	};
-
-	MOC.prototype.reportChange = function() {
+	reportChange() {
 		this.view && this.view.requestRedraw();
-	};
+	}
 
-	MOC.prototype.show = function() {
+	show() {
 		if (this.isShowing) return;
 		this.isShowing = true;
 		this.reportChange();
-	};
+	}
 
-	MOC.prototype.hide = function() {
+	hide() {
 		if (! this.isShowing) return;
 		this.isShowing = false;
 		this.reportChange();
-	};
+	}
 
 	// Tests whether a given (ra, dec) point on the sky is within the current MOC object
 	//
 	// returns true if point is contained, false otherwise
-	MOC.prototype.contains = function(ra, dec) {
+	contains(ra, dec) {
 		var hpxIdx = new HealpixIndex(Math.pow(2, this.order));
 		hpxIdx.init();
 		var polar = Utils.radecToPolar(ra, dec);
@@ -454,10 +453,6 @@ MOC = (function() {
 		}
 
 		return false;
-	};
+	}
 
-	return MOC;
-
-})();
-
-
+}
