@@ -34,21 +34,15 @@ function getFields(instance, xml) {
 	instance.keyRa = instance.keyDec = null
 	$(xml).find("FIELD").each(function() {
 		let f = {}
-		for (let i=0; i<attributes.length; i++) {
-			let attribute = attributes[i]
-			if ($(this).attr(attribute)) {
-				f[attribute] = $(this).attr(attribute)
-			}
-		}
-		if (!f.ID) f.ID = "col_" + k
-
+		attributes.forEach( attribute => {
+			if ($(this).attr(attribute)) f[attribute] = $(this).attr(attribute)
+		})
+		f.ID = f.ID || `col_${k}`
 		if (!instance.keyRa && f.ucd && (f.ucd.indexOf('pos.eq.ra')==0 || f.ucd.indexOf('POS_EQ_RA')==0)) {
-			if (f.name) instance.keyRa = f.name
-			else        instance.keyRa = f.ID
+			instance.keyRa = f.name || f.ID
 		}
 		if (!instance.keyDec && f.ucd && (f.ucd.indexOf('pos.eq.dec')==0 || f.ucd.indexOf('POS_EQ_DEC')==0)) {
-			if (f.name) instance.keyDec = f.name
-			else        instance.keyDec = f.ID
+			instance.keyDec = f.name || f.ID
 		}
 		fields.push(f)
 		k++
@@ -60,12 +54,8 @@ function getFields(instance, xml) {
 function getSources(instance, csv, fields) {
 	// TODO : find ra and dec key names (see in Catalog)
 	if (!instance.keyRa || ! instance.keyDec) return []
-	lines = csv.split('\n')
-	let mesureKeys = []
-	for (let k=0; k<fields.length; k++) {
-		if (fields[k].name) mesureKeys.push(fields[k].name)
-		else                mesureKeys.push(fields[k].ID)
-	}
+	let lines = csv.split('\n')
+	let mesureKeys = fields.map( field => field.name || field.ID )
 
 	let sources = []
 	let coo = new Coo()
