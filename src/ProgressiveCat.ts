@@ -282,7 +282,7 @@ export class ProgressiveCat extends MetaCatalog {
 	}
 
 	_finishInitWhenReady() {
-		this.view.requestRedraw()
+		this.view?.requestRedraw()
 		this.loadNeededTiles()
 	}
 
@@ -354,11 +354,11 @@ export class ProgressiveCat extends MetaCatalog {
 		if (!this.isShowing) return
 		this.tilesInView = []
 
-		let norder = this.view.realNorder
+		let norder = this.view?.realNorder as any
 		if (norder>this.maxOrder) norder = this.maxOrder
 
 		if (norder<=this.maxOrderAllsky) return // nothing to do, hurrayh !
-		let cells = this.view.getVisibleCells(norder, this.frame)
+		let cells = this.view?.getVisibleCells(norder, this.frame) || []
 		for (let curOrder=3; curOrder<=norder; curOrder++) {
 			let ipixList = uniq(cells.map( cell => Math.floor((cell as any).ipix / Math.pow(4, norder - curOrder)) )) // TODO :
 			ipixList.forEach( ipix => this.tilesInView.push([curOrder, ipix])) // load needed tiles
@@ -380,7 +380,7 @@ export class ProgressiveCat extends MetaCatalog {
 						//dataType: 'jsonp',
 						success: (tsv) => {
 							self.sourcesCache.set(key, getSources(self, tsv, self.fields))
-							self.view.requestRedraw()
+							self.view?.requestRedraw()
 						},
 						error: () => self.sourcesCache.set(key, []) // on suppose qu'il s'agit d'une erreur 404
 					})
@@ -389,5 +389,5 @@ export class ProgressiveCat extends MetaCatalog {
 		})
 	}
 
-	reportChange() { this.view.requestRedraw() }// TODO: to be shared with Catalog
+	reportChange() { this.view?.requestRedraw() }// TODO: to be shared with Catalog
 }
