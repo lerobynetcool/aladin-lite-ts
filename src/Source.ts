@@ -30,6 +30,9 @@ import { Catalog } from './Catalog'
 import { Popup } from './Popup'
 
 export class Source {
+	x?: number
+	y?: number
+	sourceSize?: number // TODO : is Source.sourceSize ever set ???
 	ra: number
 	dec: number
 	data: {[key:string]: string} // TODO : maybe it's not pointing to string... to be clarified
@@ -81,14 +84,14 @@ export class Source {
 
 	static showTable(source: Source) {
 		if(source.catalog) {
-			source.catalog.view.aladin.measurementTable.showMeasurement(source)
+			source.catalog.view?.aladin.measurementTable.showMeasurement(source)
 			source.select()
 		}
 	}
 	static showPopup(source: Source) {
 		if(source.catalog) {
 			let view = source.catalog.view
-			view.popup.setTitle('<br><br>')
+			view?.popup.setTitle('<br><br>')
 			let m = '<div class="aladin-marker-measurement">'
 			m += '<table>'
 			for (let key in source.data) {
@@ -96,15 +99,16 @@ export class Source {
 			}
 			m += '</table>'
 			m += '</div>'
-			view.popup.setText(m)
-			view.popup.setSource(source)
-			view.popup.show()
+			view?.popup.setText(m)
+			view?.popup.setSource(source)
+			view?.popup.show()
 		}
 	}
 	// function called when a source is clicked. Called by the View object
 	actionClicked() {
 		if (this.catalog?.onClick) {
 			let view = this.catalog.view
+			if(!view) return
 			// TODO : onClick should have only one possible type and never string...
 			     if (this.catalog.onClick=='showTable') Source.showTable(this)
 			else if (this.catalog.onClick=='showPopup') Source.showPopup(this)
