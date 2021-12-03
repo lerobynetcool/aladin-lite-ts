@@ -221,7 +221,7 @@ export class HpxKey {
 
 		if (cornersXY[0] == null || cornersXY[1] == null || cornersXY[2] == null || cornersXY[3] == null ) return null
 
-		for(let k=0; k<4; k++) cornersXYView[k] = AladinUtils.xyToView(cornersXY[k].X, cornersXY[k].Y, view.width, view.height, view.largestDim, view.zoomFactor)
+		for(let k=0; k<4; k++) cornersXYView[k] = AladinUtils.xyToView(cornersXY[k].X, cornersXY[k].Y, view.width as number, view.height as number, view.largestDim as number, view.zoomFactor)
 
 		return cornersXYView
 	}
