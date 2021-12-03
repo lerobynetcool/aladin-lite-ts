@@ -476,7 +476,7 @@ class Catalog {
 		else return false
 	}
 
-	static getSource(catalogInstance, s, ctx) {
+	static drawSourceSelection(catalogInstance, s, ctx) {
 		if (!s || !s.isShowing || !s.x || !s.y) return
 		let sourceSize = catalogInstance.selectSize
 		ctx.drawImage(catalogInstance.cacheSelectCanvas, s.x-sourceSize/2, s.y-sourceSize/2)
