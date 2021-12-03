@@ -156,7 +156,20 @@ export class Parser extends Base {
 
 	createDataUnit(header: Header, blob: any) {
 		let type = header.getDataType()
-		return new FITS[type](header, blob)
+		switch(type) {
+			case "DataUnit"        : return new DataUnit(header, blob)
+			case "HeaderVerify"    : return new HeaderVerify()
+			case "Header"          : return new Header(header)
+			case "ImageUtils"      : return new ImageUtils()
+			case "Image"           : return new Image(header, blob)
+			case "Tabular"         : return new Tabular(header, blob)
+			case "Table"           : return new Table(header, blob)
+			case "BinaryTable"     : return new BinaryTable(header, blob)
+			case "Decompress"      : return new Decompress()
+			case "CompressedImage" : return new CompressedImage(header, blob)
+			case "HDU"             : return new HDU(header, blob)
+		}
+		// return new FITS[type](header, blob)
 	}
 
 	excessBytes(length: number) { return (this.BLOCKLENGTH - (length % this.BLOCKLENGTH)) % this.BLOCKLENGTH }
@@ -167,17 +180,17 @@ export class Parser extends Base {
 export class FITS extends Base {
 	static version = '0.6.5'
 
-	static DataUnit        = DataUnit
-	static HeaderVerify    = HeaderVerify
-	static Header          = Header
-	static ImageUtils      = ImageUtils
-	static Image           = Image
-	static Tabular         = Tabular
-	static Table           = Table
-	static BinaryTable     = BinaryTable
-	static Decompress      = Decompress
-	static CompressedImage = CompressedImage
-	static HDU             = HDU
+	// static DataUnit        = DataUnit
+	// static HeaderVerify    = HeaderVerify
+	// static Header          = Header
+	// static ImageUtils      = ImageUtils
+	// static Image           = Image
+	// static Tabular         = Tabular
+	// static Table           = Table
+	// static BinaryTable     = BinaryTable
+	// static Decompress      = Decompress
+	// static CompressedImage = CompressedImage
+	// static HDU             = HDU
 
 	arg: any
 	hdus: HDU[] = []
@@ -695,8 +708,8 @@ class Image extends DataUnit {
 			let bzero = data.bzero
 			let bscale = data.bscale
 			let url = data.url
-			importScripts(url)
-			let arr = _getFrame(buffer, bitpix, bzero, bscale)
+			// importScripts(url) // ← ??? TODO : what is that ??? it's implemented nowhere...
+			let arr = _this._getFrame(buffer, bitpix, bzero, bscale)
 			return postMessage(arr)
 		}
 		let fn1 = "onmessage = " + onmessage.toString().replace('return postMessage', 'postMessage')
@@ -814,6 +827,8 @@ class Tabular extends DataUnit {
 	descriptors: any[] = []
 	elementByteLengths: any[] = []
 	lastRowInBuffer: any
+
+	setAccessors(header: any) {} // TODO : should this be added ?
 
 	constructor(header: any, data: any) {
 		super(header, data)
@@ -1025,7 +1040,7 @@ class BinaryTable extends Tabular {
 		4: Uint32Array
 	}
 
-	static offsets = {
+	static offsets: any = {
 		L: 1,
 		B: 1,
 		I: 2,
@@ -1124,7 +1139,7 @@ class BinaryTable extends Tabular {
 		let arr = new this.typedArray[descriptor](heapSlice)
 		let i = arr.length
 		while (i--) {
-			arr[i] = this.constructor.swapEndian[descriptor](arr[i])
+			arr[i] = DataUnit.swapEndian[descriptor](arr[i])
 		}
 		return [arr, offset]
 	}
@@ -1147,7 +1162,7 @@ class BinaryTable extends Tabular {
 			_results.push((function(descriptor, count) {
 				let accessor
 				_this.descriptors.push(descriptor)
-				_this.elementByteLengths.push(_this.constructor.offsets[descriptor] * count)
+				_this.elementByteLengths.push(BinaryTable.offsets[descriptor] * count)
 				if (isArray) {
 					switch (type) {
 						case "COMPRESSED_DATA":
@@ -1230,7 +1245,7 @@ class BinaryTable extends Tabular {
 		return _results
 	}
 
-	_getRows(buffer: any, nRows: any) {
+	_getRows(buffer: any, nRows: any): any {
 		let view = new DataView(buffer)
 		let offset = 0
 		let rows = []
@@ -1400,7 +1415,7 @@ class CompressedImage extends BinaryTable {
 		return random
 	}
 
-	randomSequence = CompressedImage.randomGenerator()
+	static randomSequence = CompressedImage.randomGenerator()
 
 	ztile: any[] = []
 	zcmptype: any
@@ -1418,7 +1433,7 @@ class CompressedImage extends BinaryTable {
 	bscale: any
 	constructor(header: any, data: any) {
 		super(header, data)
-		var _i
+		let _i
 		// CompressedImage.__super__.constructor.apply(this, arguments);
 		this.zcmptype = header.get("ZCMPTYPE")
 		this.zbitpix = header.get("ZBITPIX")
@@ -1450,7 +1465,7 @@ class CompressedImage extends BinaryTable {
 		this.bscale = header.get("BSCALE") || 1
 	}
 
-	_getRows(buffer: any, nRows: number) {
+	_getRows(buffer: any, nRows: number): any {
 		var _i, _j
 		let view = new DataView(buffer)
 		let offset = 0
@@ -1472,7 +1487,7 @@ class CompressedImage extends BinaryTable {
 			let nTile = this.height - nRows
 			let seed0 = nTile + this.zdither - 1
 			let seed1 = (seed0 - 1) % 10000
-			let rIndex = parseInt(this.constructor.randomSequence[seed1] * 500 as any)
+			let rIndex = parseInt(CompressedImage.randomSequence[seed1] * 500 as any)
 			for (let index = _j = 0, _len1 = data.length; _j < _len1; index = ++_j) {
 				let value = data[index]
 				let i = (nTile - 1) * this.width + index
@@ -1481,13 +1496,13 @@ class CompressedImage extends BinaryTable {
 				} else if (value === -2147483646) {
 					arr[i] = 0
 				} else {
-					let r = this.constructor.randomSequence[rIndex]
+					let r = CompressedImage.randomSequence[rIndex]
 					arr[i] = (value - r + 0.5) * scale + zero
 				}
 				rIndex += 1
 				if (rIndex === 10000) {
 					seed1 = (seed1 + 1) % 10000
-					rIndex = parseInt(this.randomSequence[seed1] * 500 as any)
+					rIndex = parseInt(CompressedImage.randomSequence[seed1] * 500 as any)
 				}
 			}
 		}
