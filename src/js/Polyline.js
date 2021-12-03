@@ -31,9 +31,8 @@
  *
  *****************************************************************************/
 
-Polyline= (function() {
-	// constructor
-	Polyline = function(radecArray, options) {
+class Polyline {
+	constructor(radecArray, options) {
 		options = options || {};
 		this.color = options['color'] || "white";
 		this.lineWidth = options["lineWidth"] || 2;
@@ -43,49 +42,49 @@ Polyline= (function() {
 
 		this.isShowing = true;
 		this.isSelected = false;
-	};
+	}
 
-	Polyline.prototype.setOverlay = function(overlay) {
+	setOverlay(overlay) {
 		this.overlay = overlay;
-	};
+	}
 
-	Polyline.prototype.show = function() {
+	show() {
 		if (this.isShowing) return;
 		this.isShowing = true;
 		if (this.overlay) this.overlay.reportChange();
-	};
+	}
 
-	Polyline.prototype.hide = function() {
+	hide() {
 		if (! this.isShowing) return;
 		this.isShowing = false;
 		if (this.overlay) this.overlay.reportChange();
-	};
+	}
 
-	Polyline.prototype.select = function() {
+	select() {
 		if (this.isSelected) return;
 		this.isSelected = true;
 		if (this.overlay) this.overlay.reportChange();
-	};
+	}
 
-	Polyline.prototype.deselect = function() {
+	deselect() {
 		if (! this.isSelected) return;
 		this.isSelected = false;
 		if (this.overlay) this.overlay.reportChange();
-	};
+	}
 
-	Polyline.prototype.setLineWidth = function(lineWidth) {
+	setLineWidth(lineWidth) {
 		if (this.lineWidth == lineWidth) return;
 		this.lineWidth = lineWidth;
 		this.overlay.reportChange();
-	};
+	}
 
-	Polyline.prototype.setColor = function(color) {
+	setColor(color) {
 		if (this.color == color) return;
 		this.color = color;
 		this.overlay.reportChange();
-	};
+	}
 
-	Polyline.prototype.draw = function(ctx, projection, frame, width, height, largestDim, zoomFactor) {
+	draw(ctx, projection, frame, width, height, largestDim, zoomFactor) {
 		if (! this.isShowing) return;
 		if (! this.radecArray || this.radecArray.length<2) return;
 		if (this.color) ctx.strokeStyle= this.color;
@@ -124,8 +123,7 @@ Polyline= (function() {
 			}
 
 		}
-		ctx.stroke();
-	};
+		ctx.stroke()
+	}
 
-	return Polyline;
-})();
+}
