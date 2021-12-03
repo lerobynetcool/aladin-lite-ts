@@ -26,13 +26,24 @@
  *
  *****************************************************************************/
 
+import { Color } from './Color'
+import { Utils } from './Utils'
+import { HealpixIndex } from './Healpix'
+import { Coo } from './libs/astro/coo'
+import { CooFrameEnum } from './CooFrameEnum'
+import { CooConversion } from './CooConversion'
+import { View } from './View'
+import { AladinUtils } from './AladinUtils'
+import { Source } from './Source'
+import { Projection } from './libs/astro/projection'
+
 // find RA, Dec fields among the given fields
 //
 // @param fields: list of objects with ucd, unit, ID, name attributes
 // @param raField:  index or name of right ascension column (might be undefined)
 // @param decField: index or name of declination column (might be undefined)
 //
-function findRADecFields(fields, raField, decField) {
+function findRADecFields(fields : any[], raField: any, decField: any) {
 	let raFieldIdx
 	let decFieldIdx
 	// first, look if RA/DEC fields have been already given
@@ -75,7 +86,6 @@ function findRADecFields(fields, raField, decField) {
 				}
 			}
 		}
-
 		if (!decFieldIdx) {
 			if (field.ucd) {
 				let ucd = $.trim(field.ucd.toLowerCase())
@@ -86,7 +96,6 @@ function findRADecFields(fields, raField, decField) {
 			}
 		}
 	}
-
 	// still not found ? try some common names for RA and Dec columns
 	if (raFieldIdx==undefined && decFieldIdx==undefined) {
 		for (let l=0, len=fields.length; l<len; l++) {
@@ -114,20 +123,28 @@ function findRADecFields(fields, raField, decField) {
 	return [raFieldIdx, decFieldIdx]
 }
 
-export class MetaCatalog {
-	color = ""
-	sourceSize = 0
-	shape = ""
-	selectSize = 0
-	cacheMarkerCanvas = {}
+export type ShapeName = "plus"|"cross"|"rhomb"|"triangle"|"circle"|"square"
 
-	static createShape(shapeName, color, sourceSize) {
+export abstract class MetaCatalog {
+	color: string = ""
+	sourceSize: number = 0
+	shape : HTMLCanvasElement|HTMLImageElement|string = ""
+	selectSize: number = 0
+	cacheCanvas?: HTMLImageElement|HTMLCanvasElement
+	cacheSelectCanvas?: HTMLCanvasElement
+	abstract selectionColor: string
+	cacheMarkerCanvas: HTMLCanvasElement = {} as HTMLCanvasElement
+	view?: View
+
+	onClick?: ((src: Source)=>void)|'showTable'|'showPopup'
+
+	static createShape(shapeName: ShapeName|HTMLCanvasElement|HTMLImageElement|string, color: string, sourceSize: number): HTMLImageElement|HTMLCanvasElement {
 		if (shapeName instanceof Image || shapeName instanceof HTMLCanvasElement) { // in this case, the shape is already created
 			return shapeName
 		}
 		let c = document.createElement('canvas')
 		c.width = c.height = sourceSize
-		let ctx= c.getContext('2d')
+		let ctx= c.getContext('2d') as CanvasRenderingContext2D
 		ctx.beginPath()
 		ctx.strokeStyle = color
 		ctx.lineWidth = 2.0
@@ -176,44 +193,43 @@ export class MetaCatalog {
 			ctx.lineTo(1, 1)
 			ctx.stroke()
 		}
-
 		return c
 	}
 
 	// API
-	updateShape(options = {}) {
+	updateShape(options: any = {}) {
 		this.color = options.color || this.color || Color.getNextColor()
 		this.sourceSize = options.sourceSize || this.sourceSize || 6
 		this.shape = options.shape || this.shape || "square"
 
 		this.selectSize = this.sourceSize + 2
 
-		this.cacheCanvas = cds.Catalog.createShape(this.shape, this.color, this.sourceSize)
-		this.cacheSelectCanvas = cds.Catalog.createShape('square', this.selectionColor, this.selectSize)
+		this.cacheCanvas = MetaCatalog.createShape(this.shape, this.color, this.sourceSize)
+		this.cacheSelectCanvas = MetaCatalog.createShape('square', this.selectionColor, this.selectSize) as HTMLCanvasElement
 
 		this.reportChange()
 	}
 
-	static drawSourceSelection(catalogInstance, s, ctx) {
+	drawSourceSelection(s: any, ctx: CanvasRenderingContext2D) {
 		if (!s || !s.isShowing || !s.x || !s.y) return
-		let sourceSize = catalogInstance.selectSize
-		ctx.drawImage(catalogInstance.cacheSelectCanvas, s.x-sourceSize/2, s.y-sourceSize/2)
+		let sourceSize = this.selectSize
+		ctx.drawImage(this.cacheSelectCanvas as HTMLCanvasElement, s.x-sourceSize/2, s.y-sourceSize/2)
 	}
 
-	static drawSource(catalogInstance, s, ctx, projection, frame, width, height, largestDim, zoomFactor) {
+	drawSource(s: Source, ctx: CanvasRenderingContext2D, projection: Projection, frame: any, width: number, height: number, largestDim: number, zoomFactor: number) {
 		if (!s.isShowing) return false
 
-		let sourceSize = catalogInstance.sourceSize
+		let sourceSize = this.sourceSize
 		let radec = [s.ra, s.dec]
 		// TODO : we could factorize this code with Aladin.world2pix
 		if (frame.system != CooFrameEnum.SYSTEMS.J2000) {
 			radec = CooConversion.J2000ToGalactic(radec)
 		}
-		let xy = projection.project(radec[0], radec[1])
+		let xy = projection.project(radec[0],radec[1])
 
 		if (xy) {
 			let xyview = AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor, true)
-			let max = s.popup ? 100 : s.sourceSize
+			let max = s.popup ? 100 : s.sourceSize as number // TODO : could be undefined
 			if (xyview) {
 				// TODO : index sources by HEALPix cells at level 3, 4 ?
 
@@ -227,13 +243,14 @@ export class MetaCatalog {
 				s.x = xyview.vx
 				s.y = xyview.vy
 				if (typeof this.shape === "function") {
-					catalogInstance.shape(s, ctx, catalogInstance.view.getViewParams())
+					(this.shape as Function)(s, ctx, this.view?.getViewParams()) // TODO : shape can be too many different things...
 				}
 				else if (s.marker && s.useMarkerDefaultIcon) {
-					ctx.drawImage(catalogInstance.cacheMarkerCanvas, s.x-sourceSize/2, s.y-sourceSize/2)
+					ctx.drawImage(this.cacheMarkerCanvas, s.x-sourceSize/2, s.y-sourceSize/2)
 				}
 				else {
-					ctx.drawImage(catalogInstance.cacheCanvas, s.x-catalogInstance.cacheCanvas.width/2, s.y-catalogInstance.cacheCanvas.height/2)
+					let cc = this.cacheCanvas as CanvasImageSource
+					ctx.drawImage(cc, s.x-Number(cc.width)/2, s.y-Number(cc.height)/2)
 				}
 
 				// has associated popup ?
@@ -246,14 +263,28 @@ export class MetaCatalog {
 	}
 
 	// callback function to be called when the status of one of the sources has changed
-	reportChange() { this.view && this.view.requestRedraw() }
+	reportChange() { this.view?.requestRedraw() }
 
 }
 
-// TODO : harmoniser parsing avec classe ProgressiveCat
 export class Catalog extends MetaCatalog {
-	constructor(options = {}) {
-		this.type = 'catalog';
+	type = 'catalog'
+	name: string
+	markerSize: number
+	maxNbSources
+	raField
+	decField
+	indexationNorder = 5 // à quel niveau indexe-t-on les sources
+	sources: Source[] = []
+	hpxIdx
+	displayLabel
+	labelColor
+	labelFont
+	labelColumn
+	selectionColor: string
+	isShowing
+	constructor(options: any = {}) {
+		super()
 		this.name = options.name || "catalog"
 		this.color = options.color || Color.getNextColor()
 		this.sourceSize = options.sourceSize || 8
@@ -265,24 +296,17 @@ export class Catalog extends MetaCatalog {
 		this.raField = options.raField || undefined // ID or name of the field holding RA
 		this.decField = options.decField || undefined // ID or name of the field holding dec
 
-		this.indexationNorder = 5 // à quel niveau indexe-t-on les sources
-		this.sources = []
 		this.hpxIdx = new HealpixIndex(this.indexationNorder)
-		this.hpxIdx.init()
 
 		this.displayLabel = options.displayLabel || false
 		this.labelColor = options.labelColor || this.color
 		this.labelFont = options.labelFont || '10px sans-serif'
 		if (this.displayLabel) {
 			this.labelColumn = options.labelColumn
-			if (!this.labelColumn) {
-				this.displayLabel = false
-			}
+			if (!this.labelColumn) this.displayLabel = false
 		}
 
-		if (this.shape instanceof Image || this.shape instanceof HTMLCanvasElement) {
-			this.sourceSize = this.shape.width
-		}
+		if (this.shape instanceof Image || this.shape instanceof HTMLCanvasElement) this.sourceSize = this.shape.width
 
 		this.selectionColor = '#00ff00'
 
@@ -293,7 +317,7 @@ export class Catalog extends MetaCatalog {
 		this.cacheMarkerCanvas = document.createElement('canvas')
 		this.cacheMarkerCanvas.width = this.markerSize
 		this.cacheMarkerCanvas.height = this.markerSize
-		let cacheMarkerCtx = this.cacheMarkerCanvas.getContext('2d')
+		let cacheMarkerCtx = this.cacheMarkerCanvas.getContext('2d') as CanvasRenderingContext2D // assume it worked
 		cacheMarkerCtx.fillStyle = this.color
 		cacheMarkerCtx.beginPath()
 		let half = (this.markerSize)/2.
@@ -302,15 +326,14 @@ export class Catalog extends MetaCatalog {
 		cacheMarkerCtx.lineWidth = 2
 		cacheMarkerCtx.strokeStyle = '#ccc'
 		cacheMarkerCtx.stroke()
-
 		this.isShowing = true
 	}
 
 	// return an array of Source(s) from a VOTable url
 	// callback function is called each time a TABLE element has been parsed
-	static parseVOTable(url, callback, maxNbSources, useProxy, raField, decField) {
+	static parseVOTable(url: string, callback: (sources: Source[])=>void, maxNbSources: number, useProxy: boolean, raField: any, decField: any) {
 		// adapted from votable.js
-		function getPrefix($xml) {
+		function getPrefix($xml: any) {
 			let prefix
 			// If Webkit chrome/safari/... (no need prefix)
 			if($xml.find('RESOURCE').length>0) {
@@ -327,16 +350,16 @@ export class Catalog extends MetaCatalog {
 			return prefix
 		}
 
-		function doParseVOTable(xml, callback = ()=>{}) {
+		function doParseVOTable(xml: string, callback = (sources: Source[])=>{}) {
 			xml = xml.replace(/^\s+/g, '') // we need to trim whitespaces at start of document
 			let attributes = ["name", "ID", "ucd", "utype", "unit", "datatype", "arraysize", "width", "precision"]
 
-			let fields = []
+			let fields: any[] = []
 			let k = 0
 			let $xml = $($.parseXML(xml))
 			let prefix = getPrefix($xml)
 			$xml.find(prefix + "FIELD").each(function() {
-				let f = {}
+				let f: any = {}
 				attributes.forEach( attribute => {
 					if ($(this).attr(attribute)) f[attribute] = $(this).attr(attribute)
 				})
@@ -348,12 +371,12 @@ export class Catalog extends MetaCatalog {
 			let raDecFieldIdxes = findRADecFields(fields, raField, decField)
 			let raFieldIdx = raDecFieldIdxes[0]
 			let decFieldIdx = raDecFieldIdxes[1]
-			let sources = []
+			let sources: Source[] = []
 			let coo = new Coo()
 			let ra
 			let dec
-			$xml.find(prefix + "TR").each(function() {
-				let mesures = {}
+			$xml.find(prefix + "TR").each( () => {
+				let mesures: {[key: string]: string} = {}
 				let k = 0
 				$(this).find(prefix + "TD").each(function() {
 					let key = fields[k].name ? fields[k].name : fields[k].id
@@ -372,7 +395,7 @@ export class Catalog extends MetaCatalog {
 					ra = coo.lon
 					dec = coo.lat
 				}
-				sources.push(new cds.Source(ra, dec, mesures))
+				sources.push(new Source(ra, dec, mesures))
 				if (maxNbSources && sources.length==maxNbSources) return false // break the .each loop
 			})
 			callback(sources)
@@ -382,8 +405,8 @@ export class Catalog extends MetaCatalog {
 	}
 
 	// API
-	addSources(sourcesToAdd) {
-		sourcesToAdd = [].concat(sourcesToAdd) // make sure we have an array and not an individual source
+	addSources(sourcesToAdd: Source[]) {
+		sourcesToAdd = new Array<Source>().concat(sourcesToAdd) // make sure we have an array and not an individual source
 		this.sources = this.sources.concat(sourcesToAdd)
 		sourcesToAdd.forEach( s => s.setCatalog(this) )
 		this.reportChange()
@@ -395,13 +418,13 @@ export class Catalog extends MetaCatalog {
 	//
 	// @param columnNames: array with names of the columns
 	// @array: 2D-array, each item being a 1d-array with the same number of items as columnNames
-	addSourcesAsArray(columnNames, array) {
-		let fields = columnNames.map( colName => {return {name: colName}} )
+	addSourcesAsArray(columnNames: string[], array: any[]) {
+		let fields = columnNames.map( e => {return {name: e}})
 		let raDecFieldIdxes = findRADecFields(fields, this.raField, this.decField)
 		let raFieldIdx = raDecFieldIdxes[0]
 		let decFieldIdx = raDecFieldIdxes[1]
 		let coo = new Coo()
-		let newSources = array.map( row => {
+		let newSources: Source[] = array.map( row => {
 			let ra
 			let dec
 			if (Utils.isNumber(row[raFieldIdx]) && Utils.isNumber(row[decFieldIdx])) {
@@ -413,9 +436,9 @@ export class Catalog extends MetaCatalog {
 				ra = coo.lon
 				dec = coo.lat
 			}
-			let dataDict = {}
+			let dataDict: {[key: string]: any} = {}
 			columnNames.forEach( (colName,colIdx) => dataDict[colName] = row[colIdx] )
-			return A.source(ra, dec, dataDict)
+			return new Source(ra, dec, dataDict)
 		})
 		this.addSources(newSources)
 	}
@@ -424,28 +447,22 @@ export class Catalog extends MetaCatalog {
 	getSources() { return this.sources }
 
 	// TODO : fonction générique traversant la liste des sources
-	selectAll() {
-		if (!this.sources) return
-		this.sources.forEach( s => s.select() )
-	}
+	selectAll() { this.sources.forEach( s => s.select() ) }
 
-	deselectAll() {
-		if (! this.sources) return
-		this.sources.forEach( s => s.deselect() )
-	}
+	deselectAll() { this.sources?.forEach(e => e.deselect()) }
 
 	// return a source by index
-	getSource(idx) {
+	getSource(idx: number): Source | undefined {
 		return this.sources[idx]
 	}
 
-	setView(view) {
+	setView(view: View) {
 		this.view = view
 		this.reportChange()
 	}
 
 	// remove a source
-	remove(source) {
+	remove(source: Source) {
 		let idx = this.sources.indexOf(source)
 		if (idx<0) return
 
@@ -456,22 +473,22 @@ export class Catalog extends MetaCatalog {
 	}
 
 	removeAll() { this.sources = [] } // TODO : RAZ de l'index
-	clear() { return this.removeAll() }
+	clear() { this.removeAll() }
 
-	draw(ctx, projection, frame, width, height, largestDim, zoomFactor) {
+	draw(ctx: CanvasRenderingContext2D, projection: Projection, frame: any, width: number, height: number, largestDim: number, zoomFactor: number) {
 		if (! this.isShowing) return
 		// tracé simple
 		//ctx.strokeStyle= this.color
 
 		//ctx.lineWidth = 1
 		//ctx.beginPath()
-		if (typeof this.shape === 'function') ctx.save()
-		let sourcesInView = []
+		if (typeof this.shape === "function") ctx.save()
+		let sourcesInView: any[] = []
  		for (var k=0, len = this.sources.length; k<len; k++) {
-			let inView = cds.Catalog.drawSource(this, this.sources[k], ctx, projection, frame, width, height, largestDim, zoomFactor)
+			let inView = this.drawSource(this.sources[k], ctx, projection, frame, width, height, largestDim, zoomFactor)
 			if (inView) sourcesInView.push(this.sources[k])
 		}
-		if (typeof this.shape === 'function') ctx.restore()
+		if (typeof this.shape === "function") ctx.restore()
 		//ctx.stroke()
 
 		// tracé sélection
@@ -481,7 +498,7 @@ export class Catalog extends MetaCatalog {
 		for (var k=0, len = sourcesInView.length; k<len; k++) {
 			source = sourcesInView[k]
 			if (! source.isSelected) continue
-			cds.Catalog.drawSourceSelection(this, source, ctx)
+			this.drawSourceSelection(source, ctx)
 		}
 		// NEEDED ?
 		//ctx.stroke()
@@ -490,13 +507,13 @@ export class Catalog extends MetaCatalog {
 		if (this.displayLabel) {
 			ctx.fillStyle = this.labelColor
 			ctx.font = this.labelFont
-			sourcesInView.forEach( s => cds.Catalog.drawSourceLabel(this, s, ctx) )
+			sourcesInView.forEach( s => this.drawSourceLabel(s, ctx) )
 		}
 	}
 
-	static drawSourceLabel(catalogInstance, s, ctx) {
+	drawSourceLabel(s: any, ctx: CanvasRenderingContext2D) {
 		if (!s || !s.isShowing || !s.x || !s.y) return
-		let label = s.data[catalogInstance.labelColumn]
+		let label = s.data[this.labelColumn]
 		if (!label) return
 		ctx.fillText(label, s.x, s.y)
 	}
@@ -513,5 +530,6 @@ export class Catalog extends MetaCatalog {
 		if (this?.view?.popup?.source?.catalog==this) this.view.popup.hide()
 		this.reportChange()
 	}
-
 }
+
+// TODO : harmoniser parsing avec classe ProgressiveCat
