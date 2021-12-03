@@ -114,61 +114,12 @@ function findRADecFields(fields, raField, decField) {
 	return [raFieldIdx, decFieldIdx]
 }
 
-// TODO : harmoniser parsing avec classe ProgressiveCat
-class Catalog {
-	constructor(options = {}) {
-		this.type = 'catalog';
-		this.name = options.name || "catalog"
-		this.color = options.color || Color.getNextColor()
-		this.sourceSize = options.sourceSize || 8
-		this.markerSize = options.sourceSize || 12
-		this.shape = options.shape || "square"
-		this.maxNbSources = options.limit || undefined
-		this.onClick = options.onClick || undefined
-
-		this.raField = options.raField || undefined // ID or name of the field holding RA
-		this.decField = options.decField || undefined // ID or name of the field holding dec
-
-		this.indexationNorder = 5 // à quel niveau indexe-t-on les sources
-		this.sources = []
-		this.hpxIdx = new HealpixIndex(this.indexationNorder)
-		this.hpxIdx.init()
-
-		this.displayLabel = options.displayLabel || false
-		this.labelColor = options.labelColor || this.color
-		this.labelFont = options.labelFont || '10px sans-serif'
-		if (this.displayLabel) {
-			this.labelColumn = options.labelColumn
-			if (!this.labelColumn) {
-				this.displayLabel = false
-			}
-		}
-
-		if (this.shape instanceof Image || this.shape instanceof HTMLCanvasElement) {
-			this.sourceSize = this.shape.width
-		}
-
-		this.selectionColor = '#00ff00'
-
-		// create this.cacheCanvas
-		// cacheCanvas permet de ne créer le path de la source qu'une fois, et de le réutiliser (cf. http://simonsarris.com/blog/427-increasing-performance-by-caching-paths-on-canvas)
-		this.updateShape(options)
-
-		this.cacheMarkerCanvas = document.createElement('canvas')
-		this.cacheMarkerCanvas.width = this.markerSize
-		this.cacheMarkerCanvas.height = this.markerSize
-		let cacheMarkerCtx = this.cacheMarkerCanvas.getContext('2d')
-		cacheMarkerCtx.fillStyle = this.color
-		cacheMarkerCtx.beginPath()
-		let half = (this.markerSize)/2.
-		cacheMarkerCtx.arc(half, half, half-2, 0, 2 * Math.PI, false)
-		cacheMarkerCtx.fill()
-		cacheMarkerCtx.lineWidth = 2
-		cacheMarkerCtx.strokeStyle = '#ccc'
-		cacheMarkerCtx.stroke()
-
-		this.isShowing = true
-	}
+export class MetaCatalog {
+	color = ""
+	sourceSize = 0
+	shape = ""
+	selectSize = 0
+	cacheMarkerCanvas = {}
 
 	static createShape(shapeName, color, sourceSize) {
 		if (shapeName instanceof Image || shapeName instanceof HTMLCanvasElement) { // in this case, the shape is already created
@@ -227,6 +178,132 @@ class Catalog {
 		}
 
 		return c
+	}
+
+	// API
+	updateShape(options = {}) {
+		this.color = options.color || this.color || Color.getNextColor()
+		this.sourceSize = options.sourceSize || this.sourceSize || 6
+		this.shape = options.shape || this.shape || "square"
+
+		this.selectSize = this.sourceSize + 2
+
+		this.cacheCanvas = cds.Catalog.createShape(this.shape, this.color, this.sourceSize)
+		this.cacheSelectCanvas = cds.Catalog.createShape('square', this.selectionColor, this.selectSize)
+
+		this.reportChange()
+	}
+
+	static drawSourceSelection(catalogInstance, s, ctx) {
+		if (!s || !s.isShowing || !s.x || !s.y) return
+		let sourceSize = catalogInstance.selectSize
+		ctx.drawImage(catalogInstance.cacheSelectCanvas, s.x-sourceSize/2, s.y-sourceSize/2)
+	}
+
+	static drawSource(catalogInstance, s, ctx, projection, frame, width, height, largestDim, zoomFactor) {
+		if (!s.isShowing) return false
+
+		let sourceSize = catalogInstance.sourceSize
+		let radec = [s.ra, s.dec]
+		// TODO : we could factorize this code with Aladin.world2pix
+		if (frame.system != CooFrameEnum.SYSTEMS.J2000) {
+			radec = CooConversion.J2000ToGalactic(radec)
+		}
+		let xy = projection.project(radec[0], radec[1])
+
+		if (xy) {
+			let xyview = AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor, true)
+			let max = s.popup ? 100 : s.sourceSize
+			if (xyview) {
+				// TODO : index sources by HEALPix cells at level 3, 4 ?
+
+				// check if source is visible in view
+				if (xyview.vx>(width+max)  || xyview.vx<(0-max) ||
+					xyview.vy>(height+max) || xyview.vy<(0-max)) {
+					s.x = s.y = undefined
+					return false
+				}
+
+				s.x = xyview.vx
+				s.y = xyview.vy
+				if (typeof this.shape === "function") {
+					catalogInstance.shape(s, ctx, catalogInstance.view.getViewParams())
+				}
+				else if (s.marker && s.useMarkerDefaultIcon) {
+					ctx.drawImage(catalogInstance.cacheMarkerCanvas, s.x-sourceSize/2, s.y-sourceSize/2)
+				}
+				else {
+					ctx.drawImage(catalogInstance.cacheCanvas, s.x-catalogInstance.cacheCanvas.width/2, s.y-catalogInstance.cacheCanvas.height/2)
+				}
+
+				// has associated popup ?
+				if (s.popup) s.popup.setPosition(s.x, s.y)
+
+			}
+			return true
+		}
+		else return false
+	}
+
+	// callback function to be called when the status of one of the sources has changed
+	reportChange() { this.view && this.view.requestRedraw() }
+
+}
+
+// TODO : harmoniser parsing avec classe ProgressiveCat
+export class Catalog extends MetaCatalog {
+	constructor(options = {}) {
+		this.type = 'catalog';
+		this.name = options.name || "catalog"
+		this.color = options.color || Color.getNextColor()
+		this.sourceSize = options.sourceSize || 8
+		this.markerSize = options.sourceSize || 12
+		this.shape = options.shape || "square"
+		this.maxNbSources = options.limit || undefined
+		this.onClick = options.onClick || undefined
+
+		this.raField = options.raField || undefined // ID or name of the field holding RA
+		this.decField = options.decField || undefined // ID or name of the field holding dec
+
+		this.indexationNorder = 5 // à quel niveau indexe-t-on les sources
+		this.sources = []
+		this.hpxIdx = new HealpixIndex(this.indexationNorder)
+		this.hpxIdx.init()
+
+		this.displayLabel = options.displayLabel || false
+		this.labelColor = options.labelColor || this.color
+		this.labelFont = options.labelFont || '10px sans-serif'
+		if (this.displayLabel) {
+			this.labelColumn = options.labelColumn
+			if (!this.labelColumn) {
+				this.displayLabel = false
+			}
+		}
+
+		if (this.shape instanceof Image || this.shape instanceof HTMLCanvasElement) {
+			this.sourceSize = this.shape.width
+		}
+
+		this.selectionColor = '#00ff00'
+
+		// create this.cacheCanvas
+		// cacheCanvas permet de ne créer le path de la source qu'une fois, et de le réutiliser (cf. http://simonsarris.com/blog/427-increasing-performance-by-caching-paths-on-canvas)
+		this.updateShape(options)
+
+		this.cacheMarkerCanvas = document.createElement('canvas')
+		this.cacheMarkerCanvas.width = this.markerSize
+		this.cacheMarkerCanvas.height = this.markerSize
+		let cacheMarkerCtx = this.cacheMarkerCanvas.getContext('2d')
+		cacheMarkerCtx.fillStyle = this.color
+		cacheMarkerCtx.beginPath()
+		let half = (this.markerSize)/2.
+		cacheMarkerCtx.arc(half, half, half-2, 0, 2 * Math.PI, false)
+		cacheMarkerCtx.fill()
+		cacheMarkerCtx.lineWidth = 2
+		cacheMarkerCtx.strokeStyle = '#ccc'
+		cacheMarkerCtx.stroke()
+
+		this.isShowing = true
 	}
 
 	// return an array of Source(s) from a VOTable url
@@ -302,20 +379,6 @@ class Catalog {
 		}
 		Utils.getAjaxObject(url, 'GET', 'text', useProxy)
 			.done( (xml) => doParseVOTable(xml, callback) )
-	}
-
-	// API
-	updateShape(options = {}) {
-		this.color = options.color || this.color || Color.getNextColor()
-		this.sourceSize = options.sourceSize || this.sourceSize || 6
-		this.shape = options.shape || this.shape || "square"
-
-		this.selectSize = this.sourceSize + 2
-
-		this.cacheCanvas = cds.Catalog.createShape(this.shape, this.color, this.sourceSize)
-		this.cacheSelectCanvas = cds.Catalog.createShape('square', this.selectionColor, this.selectSize)
-
-		this.reportChange()
 	}
 
 	// API
@@ -431,66 +494,12 @@ class Catalog {
 		}
 	}
 
-	static drawSource(catalogInstance, s, ctx, projection, frame, width, height, largestDim, zoomFactor) {
-		if (!s.isShowing) return false
-
-		let sourceSize = catalogInstance.sourceSize
-		let radec = [s.ra, s.dec]
-		// TODO : we could factorize this code with Aladin.world2pix
-		if (frame.system != CooFrameEnum.SYSTEMS.J2000) {
-			radec = CooConversion.J2000ToGalactic(radec)
-		}
-		let xy = projection.project(radec[0], radec[1])
-
-		if (xy) {
-			let xyview = AladinUtils.xyToView(xy.X, xy.Y, width, height, largestDim, zoomFactor, true)
-			let max = s.popup ? 100 : s.sourceSize
-			if (xyview) {
-				// TODO : index sources by HEALPix cells at level 3, 4 ?
-
-				// check if source is visible in view
-				if (xyview.vx>(width+max)  || xyview.vx<(0-max) ||
-					xyview.vy>(height+max) || xyview.vy<(0-max)) {
-					s.x = s.y = undefined
-					return false
-				}
-
-				s.x = xyview.vx
-				s.y = xyview.vy
-				if (typeof this.shape === "function") {
-					catalogInstance.shape(s, ctx, catalogInstance.view.getViewParams())
-				}
-				else if (s.marker && s.useMarkerDefaultIcon) {
-					ctx.drawImage(catalogInstance.cacheMarkerCanvas, s.x-sourceSize/2, s.y-sourceSize/2)
-				}
-				else {
-					ctx.drawImage(catalogInstance.cacheCanvas, s.x-catalogInstance.cacheCanvas.width/2, s.y-catalogInstance.cacheCanvas.height/2)
-				}
-
-				// has associated popup ?
-				if (s.popup) s.popup.setPosition(s.x, s.y)
-
-			}
-			return true
-		}
-		else return false
-	}
-
-	static drawSourceSelection(catalogInstance, s, ctx) {
-		if (!s || !s.isShowing || !s.x || !s.y) return
-		let sourceSize = catalogInstance.selectSize
-		ctx.drawImage(catalogInstance.cacheSelectCanvas, s.x-sourceSize/2, s.y-sourceSize/2)
-	}
-
 	static drawSourceLabel(catalogInstance, s, ctx) {
 		if (!s || !s.isShowing || !s.x || !s.y) return
 		let label = s.data[catalogInstance.labelColumn]
 		if (!label) return
 		ctx.fillText(label, s.x, s.y)
 	}
-
-	// callback function to be called when the status of one of the sources has changed
-	reportChange() { this.view && this.view.requestRedraw() }
 
 	show() {
 		if (this.isShowing) return
