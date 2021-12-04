@@ -9,16 +9,14 @@
  *
  *****************************************************************************/
 
-function log2(val) {
-	return Math.log(val) / Math.LN2;
-}
+function log2(val) { return Math.log(val) / Math.LN2 }
 
 function drawCorners(ctx, xyCorners) {
-	ctx.moveTo(xyCorners[0].vx, xyCorners[0].vy);
-	ctx.lineTo(xyCorners[1].vx, xyCorners[1].vy);
-	ctx.lineTo(xyCorners[2].vx, xyCorners[2].vy);
-	ctx.lineTo(xyCorners[3].vx, xyCorners[3].vy);
-	ctx.lineTo(xyCorners[0].vx, xyCorners[0].vy);
+	ctx.moveTo(xyCorners[0].vx, xyCorners[0].vy)
+	ctx.lineTo(xyCorners[1].vx, xyCorners[1].vy)
+	ctx.lineTo(xyCorners[2].vx, xyCorners[2].vy)
+	ctx.lineTo(xyCorners[3].vx, xyCorners[3].vy)
+	ctx.lineTo(xyCorners[0].vx, xyCorners[0].vy)
 }
 
 // remove duplicate items from array a
@@ -50,76 +48,57 @@ function getXYCorners(nside, ipix, viewFrame, surveyFrame, width, height, larges
 
 	// detect pixels outside view. Could be improved !
 	// we minimize here the number of cells returned
-	if( cornersXYView[0].vx<0 && cornersXYView[1].vx<0 && cornersXYView[2].vx<0 &&cornersXYView[3].vx<0) return null
-	if( cornersXYView[0].vy<0 && cornersXYView[1].vy<0 && cornersXYView[2].vy<0 &&cornersXYView[3].vy<0) return null
-	if( cornersXYView[0].vx>=width && cornersXYView[1].vx>=width && cornersXYView[2].vx>=width &&cornersXYView[3].vx>=width) return null
-	if( cornersXYView[0].vy>=height && cornersXYView[1].vy>=height && cornersXYView[2].vy>=height &&cornersXYView[3].vy>=height) return null
+	if( cornersXYView[0].vx<0       && cornersXYView[1].vx<0       && cornersXYView[2].vx<0       && cornersXYView[3].vx<0       ) return null
+	if( cornersXYView[0].vy<0       && cornersXYView[1].vy<0       && cornersXYView[2].vy<0       && cornersXYView[3].vy<0       ) return null
+	if( cornersXYView[0].vx>=width  && cornersXYView[1].vx>=width  && cornersXYView[2].vx>=width  && cornersXYView[3].vx>=width  ) return null
+	if( cornersXYView[0].vy>=height && cornersXYView[1].vy>=height && cornersXYView[2].vy>=height && cornersXYView[3].vy>=height ) return null
 
 	cornersXYView = AladinUtils.grow2(cornersXYView, 1)
 	return cornersXYView
 }
 
 class MOC {
-	constructor(options) {
-		this.order = undefined;
+	type = 'moc'
 
-		this.type = 'moc';
+	proxyCalled = false // this is a flag to check whether we already tried to load the MOC through the proxy
+	nbCellsDeepestLevel = 0 // needed to compute the sky fraction of the MOC
 
+	// index of MOC cells at high and low resolution
+	_highResIndexOrder3 = Array.from({length: 768}, () => {return{}}) // an array filled with 768 empty element {}
+	_lowResIndexOrder3  = Array.from({length: 768}, () => {return{}}) // an array filled with 768 empty element {}
+
+	isShowing = true
+	ready = false
+
+	constructor(options = {}) {
+		this.order = undefined
 		// TODO homogenize options parsing for all kind of overlay (footprints, catalog, MOC)
-		options = options || {};
-		this.name = options.name || "MOC";
-		this.color = options.color || Color.getNextColor();
-		this.opacity = options.opacity || 1;
-		this.opacity = Math.max(0, Math.min(1, this.opacity)); // 0 <= this.opacity <= 1
-		this.lineWidth = options["lineWidth"] || 1;
-		this.adaptativeDisplay = options['adaptativeDisplay'] !== false;
-
-		this.proxyCalled = false; // this is a flag to check whether we already tried to load the MOC through the proxy
-
-		// index of MOC cells at high and low resolution
-		this._highResIndexOrder3 = new Array(768);
-		this._lowResIndexOrder3 = new Array(768);
-		for (var k=0; k<768; k++) {
-			this._highResIndexOrder3[k] = {};
-			this._lowResIndexOrder3[k] = {};
-		}
-
-		this.nbCellsDeepestLevel = 0; // needed to compute the sky fraction of the MOC
-
-		this.isShowing = true;
-		this.ready = false;
+		this.name = options.name || "MOC"
+		this.color = options.color || Color.getNextColor()
+		this.opacity = options.opacity || 1
+		this.opacity = Math.max(0, Math.min(1, this.opacity)) // 0 <= this.opacity <= 1
+		this.lineWidth = options["lineWidth"] || 1
+		this.adaptativeDisplay = options['adaptativeDisplay'] !== false
 	}
 
 	// max norder we can currently handle (limitation of healpix.js)
-	static MAX_NORDER = 13; // NSIDE = 8192
+	static MAX_NORDER = 13 // NSIDE = 8192
 
-	static LOWRES_MAXORDER = 6; // 5 or 6 ??
-	static HIGHRES_MAXORDER = 11; // ??
+	static LOWRES_MAXORDER = 6 // 5 or 6 ??
+	static HIGHRES_MAXORDER = 11 // ??
 
 	// TODO: options to modifiy this ?
-	static PIVOT_FOV = 30; // when do we switch from low res cells to high res cells (fov in degrees)
+	static PIVOT_FOV = 30 // when do we switch from low res cells to high res cells (fov in degrees)
 
 	// at end of parsing, we need to remove duplicates from the 2 indexes
 	removeDuplicatesFromIndexes() {
-		var a, aDedup;
-		for (var k=0; k<768; k++) {
-			for (var key in this._highResIndexOrder3[k]) {
-				a = this._highResIndexOrder3[k][key];
-				aDedup = uniq(a);
-				this._highResIndexOrder3[k][key] = aDedup;
-			}
-			for (var key in this._lowResIndexOrder3[k]) {
-				a = this._lowResIndexOrder3[k][key];
-				aDedup = uniq(a);
-				this._lowResIndexOrder3[k][key] = aDedup;
-			}
-		}
-
+		this._highResIndexOrder3 = this._highResIndexOrder3.map( o => { for(let k in o) o[k] = uniq(o[k]) } )
+		this._lowResIndexOrder3  = this._lowResIndexOrder3 .map( o => { for(let k in o) o[k] = uniq(o[k]) } )
 	}
 
 	// add pixel (order, ipix)
 	addPix(order, ipix) {
-		var ipixOrder3 = Math.floor( ipix * Math.pow(4, (3 - order)) );
+		let ipixOrder3 = Math.floor( ipix * Math.pow(4, (3 - order)) );
 		// fill low and high level cells
 		// 1. if order <= LOWRES_MAXORDER, just store value in low and high res cells
 		if (order<=MOC.LOWRES_MAXORDER) {
