@@ -97,7 +97,7 @@ class MOC {
 	}
 
 	// add pixel (order, ipix)
-	addPix(order, ipix) {
+	_addPix(order, ipix) {
 		let ipixOrder3 = Math.floor( ipix * Math.pow(4, (3 - order)) );
 		// fill low and high level cells
 		// 1. if order <= LOWRES_MAXORDER, just store value in low and high res cells
