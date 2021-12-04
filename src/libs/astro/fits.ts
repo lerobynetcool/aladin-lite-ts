@@ -194,7 +194,7 @@ export class FITS extends Base {
 
 	arg: any
 	hdus: HDU[] = []
-	constructor(arg: any, callback: Function, opts: any) {
+	constructor(arg: any, callback: Function, opts: any = undefined) {
 		super()
 		let _this = this
 		this.arg = arg
