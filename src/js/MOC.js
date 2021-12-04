@@ -25,12 +25,10 @@ function drawCorners(ctx, xyCorners) {
 function uniq(a) { return [...new Set(self)]}
 
 // TODO: merge with what is done in View.getVisibleCells
-var _spVec = new SpatialVector();
+let spVec = new SpatialVector();
 function getXYCorners(nside, ipix, viewFrame, surveyFrame, width, height, largestDim, zoomFactor, projection) {
 	let cornersXYView = []
 	let cornersXY = []
-
-	let spVec = _spVec
 
 	let corners = HealpixCache.corners_nest(ipix, nside)
 	for (let k=0; k<4; k++) {
@@ -44,7 +42,7 @@ function getXYCorners(nside, ipix, viewFrame, surveyFrame, width, height, larges
 		cornersXY[k] = projection.project(radec[0], radec[1])
 	}
 
-	if (cornersXY[0] == null ||  cornersXY[1] == null  ||  cornersXY[2] == null ||  cornersXY[3] == null ) return null
+	if (cornersXY[0] == null ||  cornersXY[1] == null || cornersXY[2] == null || cornersXY[3] == null ) return null
 
 	for (var k=0; k<4; k++) {
 		cornersXYView[k] = AladinUtils.xyToView(cornersXY[k].X, cornersXY[k].Y, width, height, largestDim, zoomFactor)
