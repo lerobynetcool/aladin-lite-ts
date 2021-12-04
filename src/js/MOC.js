@@ -98,243 +98,200 @@ class MOC {
 
 	// add pixel (order, ipix)
 	_addPix(order, ipix) {
-		let ipixOrder3 = Math.floor( ipix * Math.pow(4, (3 - order)) );
+		let ipixOrder3 = Math.floor( ipix * Math.pow(4, (3 - order)) )
 		// fill low and high level cells
 		// 1. if order <= LOWRES_MAXORDER, just store value in low and high res cells
 		if (order<=MOC.LOWRES_MAXORDER) {
 			if (! (order in this._lowResIndexOrder3[ipixOrder3])) {
-				this._lowResIndexOrder3[ipixOrder3][order] = [];
-				this._highResIndexOrder3[ipixOrder3][order] = [];
+				this._lowResIndexOrder3[ipixOrder3][order] = []
+				this._highResIndexOrder3[ipixOrder3][order] = []
 			}
-			this._lowResIndexOrder3[ipixOrder3][order].push(ipix);
-			this._highResIndexOrder3[ipixOrder3][order].push(ipix);
+			this._lowResIndexOrder3[ipixOrder3][order].push(ipix)
+			this._highResIndexOrder3[ipixOrder3][order].push(ipix)
 		}
 		// 2. if LOWRES_MAXORDER < order <= HIGHRES_MAXORDER , degrade ipix for low res cells
 		else if (order<=MOC.HIGHRES_MAXORDER) {
-			if (! (order in this._highResIndexOrder3[ipixOrder3])) {
-				this._highResIndexOrder3[ipixOrder3][order] = [];
-			}
-			this._highResIndexOrder3[ipixOrder3][order].push(ipix);
+			if (! (order in this._highResIndexOrder3[ipixOrder3])) this._highResIndexOrder3[ipixOrder3][order] = []
+			this._highResIndexOrder3[ipixOrder3][order].push(ipix)
 
-			var degradedOrder = MOC.LOWRES_MAXORDER;
-			var degradedIpix  = Math.floor(ipix / Math.pow(4, (order - degradedOrder)));
-			var degradedIpixOrder3 = Math.floor( degradedIpix * Math.pow(4, (3 - degradedOrder)) );
-			if (! (degradedOrder in this._lowResIndexOrder3[degradedIpixOrder3])) {
-				this._lowResIndexOrder3[degradedIpixOrder3][degradedOrder]= [];
-			}
-			this._lowResIndexOrder3[degradedIpixOrder3][degradedOrder].push(degradedIpix);
+			let degradedOrder = MOC.LOWRES_MAXORDER
+			let degradedIpix  = Math.floor(ipix / Math.pow(4, (order - degradedOrder)))
+			let degradedIpixOrder3 = Math.floor( degradedIpix * Math.pow(4, (3 - degradedOrder)) )
+			if (! (degradedOrder in this._lowResIndexOrder3[degradedIpixOrder3])) this._lowResIndexOrder3[degradedIpixOrder3][degradedOrder]= []
+			this._lowResIndexOrder3[degradedIpixOrder3][degradedOrder].push(degradedIpix)
 		}
 		// 3. if order > HIGHRES_MAXORDER , degrade ipix for low res and high res cells
 		else {
 			// low res cells
-			var degradedOrder = MOC.LOWRES_MAXORDER;
-			var degradedIpix  = Math.floor(ipix / Math.pow(4, (order - degradedOrder)));
-			var degradedIpixOrder3 = Math.floor(degradedIpix * Math.pow(4, (3 - degradedOrder)) );
-			if (! (degradedOrder in this._lowResIndexOrder3[degradedIpixOrder3])) {
-				this._lowResIndexOrder3[degradedIpixOrder3][degradedOrder]= [];
-			}
-			this._lowResIndexOrder3[degradedIpixOrder3][degradedOrder].push(degradedIpix);
-
+			let degradedOrder = MOC.LOWRES_MAXORDER
+			let degradedIpix  = Math.floor(ipix / Math.pow(4, (order - degradedOrder)))
+			let degradedIpixOrder3 = Math.floor(degradedIpix * Math.pow(4, (3 - degradedOrder)) )
+			if (! (degradedOrder in this._lowResIndexOrder3[degradedIpixOrder3])) this._lowResIndexOrder3[degradedIpixOrder3][degradedOrder]= []
+			this._lowResIndexOrder3[degradedIpixOrder3][degradedOrder].push(degradedIpix)
 
 			// high res cells
-			degradedOrder = MOC.HIGHRES_MAXORDER;
-			degradedIpix  = Math.floor(ipix / Math.pow(4, (order - degradedOrder)));
-			var degradedIpixOrder3 = Math.floor(degradedIpix * Math.pow(4, (3 - degradedOrder)) );
-			if (! (degradedOrder in this._highResIndexOrder3[degradedIpixOrder3])) {
-				this._highResIndexOrder3[degradedIpixOrder3][degradedOrder]= [];
-			}
-			this._highResIndexOrder3[degradedIpixOrder3][degradedOrder].push(degradedIpix);
+			degradedOrder = MOC.HIGHRES_MAXORDER
+			degradedIpix  = Math.floor(ipix / Math.pow(4, (order - degradedOrder)))
+			degradedIpixOrder3 = Math.floor(degradedIpix * Math.pow(4, (3 - degradedOrder)) )
+			if (! (degradedOrder in this._highResIndexOrder3[degradedIpixOrder3])) this._highResIndexOrder3[degradedIpixOrder3][degradedOrder]= []
+			this._highResIndexOrder3[degradedIpixOrder3][degradedOrder].push(degradedIpix)
 		}
-
-		this.nbCellsDeepestLevel += Math.pow(4, (this.order - order));
+		this.nbCellsDeepestLevel += Math.pow(4, (this.order - order))
 	}
 
 	/**
 	 *  Return a value between 0 and 1 denoting the fraction of the sky
 	 *  covered by the MOC
 	 */
-	skyFraction() {
-		return this.nbCellsDeepestLevel / (12 * Math.pow(4, this.order));
-	}
+	skyFraction() { return this.nbCellsDeepestLevel / (12 * Math.pow(4, this.order)) }
 
 	/**
 	 * set MOC data by parsing a MOC serialized in JSON
 	 * (as defined in IVOA MOC document, section 3.1.1)
 	 */
 	dataFromJSON(jsonMOC) {
-		var order, ipix;
-		for (var orderStr in jsonMOC) {
+		for (let orderStr in jsonMOC) {
 			if (jsonMOC.hasOwnProperty(orderStr)) {
-				order = parseInt(orderStr);
-				if (this.order===undefined || order > this.order) {
-					this.order = order;
-				}
-				for (var k=0; k<jsonMOC[orderStr].length; k++) {
-					ipix = jsonMOC[orderStr][k];
-					this._addPix(order, ipix);
-				}
+				let order = parseInt(orderStr);
+				if (this.order===undefined || order > this.order) this.order = order
+				jsonMOC[orderStr].forEach( ipix => this._addPix(order, ipix) )
 			}
 		}
-
-		this.reportChange();
-		this.ready = true;
+		this.reportChange()
+		this.ready = true
 	}
 
 	/**
 	 * set MOC data by parsing a URL pointing to a FITS MOC file
 	 */
-	dataFromFITSURL(mocURL, successCallback) {
-		var self = this;
-		var callback = function() {
+	dataFromFITSURL(mocURL, successCallback = ()=>{}) {
+		let self = this
+		let callback = function() {
 			// note: in the callback, 'this' refers to the FITS instance
 
 			// first, let's find MOC norder
-			var hdr0;
+			let hdr0
 			try {
 				// A zero-length hdus array might mean the served URL does not have CORS header
 				// --> let's try again through the proxy
 				if (this.hdus.length == 0) {
 					if (self.proxyCalled !== true) {
-						self.proxyCalled = true;
-						var proxiedURL = Aladin.JSONP_PROXY + '?url=' + encodeURIComponent(self.dataURL);
-						new astro.FITS(proxiedURL, callback);
+						self.proxyCalled = true
+						let proxiedURL = Aladin.JSONP_PROXY + '?url=' + encodeURIComponent(self.dataURL)
+						new astro.FITS(proxiedURL, callback)
 					}
-
-					return;
+					return
 				}
-				hdr0 = this.getHeader(0);
+				hdr0 = this.getHeader(0)
 			}
 			catch (e) {
-				console.error('Could not get header of extension #0');
-				return;
+				console.error('Could not get header of extension #0')
+				return
 			}
-			var hdr1 = this.getHeader(1);
+			let hdr1 = this.getHeader(1)
 
 			if (hdr0.contains('HPXMOC'))        self.order = hdr0.get('HPXMOC')
 			else if (hdr0.contains('MOCORDER')) self.order = hdr0.get('MOCORDER')
 			else if (hdr1.contains('HPXMOC'))   self.order = hdr1.get('HPXMOC')
 			else if (hdr1.contains('MOCORDER')) self.order = hdr1.get('MOCORDER')
 			else {
-				console.error('Can not find MOC order in FITS file');
-				return;
+				console.error('Can not find MOC order in FITS file')
+				return
 			}
 
-			var data = this.getDataUnit(1);
-			var colName = data.columns[0];
+			let data = this.getDataUnit(1)
+			let colName = data.columns[0]
 			data.getRows(0, data.rows, function(rows) {
-				for (var k=0; k<rows.length; k++) {
-					var uniq = rows[k][colName];
-					var order = Math.floor(Math.floor(log2(Math.floor(uniq/4))) / 2);
-					var ipix = uniq - 4 *(Math.pow(4, order));
-					self._addPix(order, ipix);
+				for (let k=0; k<rows.length; k++) {
+					let uniq = rows[k][colName]
+					let order = Math.floor(Math.floor(log2(Math.floor(uniq/4))) / 2)
+					let ipix = uniq - 4 *(Math.pow(4, order))
+					self._addPix(order, ipix)
 				}
+			})
+			data = null // this helps releasing memory
+			self._removeDuplicatesFromIndexes()
+			successCallback()
+			self.reportChange()
+			self.ready = true
+		} // end of callback function
 
-			});
-			data = null; // this helps releasing memory
-
-			self._removeDuplicatesFromIndexes();
-
-			if (successCallback) successCallback();
-
-			self.reportChange();
-			self.ready = true;
-		}; // end of callback function
-
-		this.dataURL = mocURL;
+		this.dataURL = mocURL
 
 		// instantiate the FITS object which will fetch the URL passed as parameter
-		new astro.FITS(this.dataURL, callback);
+		new astro.FITS(this.dataURL, callback)
 	}
 
 	setView(view) {
-		this.view = view;
-		this.reportChange();
+		this.view = view
+		this.reportChange()
 	}
 
 	draw(ctx, projection, viewFrame, width, height, largestDim, zoomFactor, fov) {
-		if (!this.isShowing || !this.ready) return;
-
-		var mocCells = fov > MOC.PIVOT_FOV && this.adaptativeDisplay ? this._lowResIndexOrder3 : this._highResIndexOrder3;
-
-		this._drawCells(ctx, mocCells, fov, projection, viewFrame, CooFrameEnum.J2000, width, height, largestDim, zoomFactor);
+		if (!this.isShowing || !this.ready) return
+		let mocCells = fov > MOC.PIVOT_FOV && this.adaptativeDisplay ? this._lowResIndexOrder3 : this._highResIndexOrder3
+		this._drawCells(ctx, mocCells, fov, projection, viewFrame, CooFrameEnum.J2000, width, height, largestDim, zoomFactor)
 	}
 
-	drawCells(ctx, mocCellsIdxOrder3, fov, projection, viewFrame, surveyFrame, width, height, largestDim, zoomFactor) {
-		ctx.lineWidth = this.lineWidth;
+	_drawCells(ctx, mocCellsIdxOrder3, fov, projection, viewFrame, surveyFrame, width, height, largestDim, zoomFactor) {
+		ctx.lineWidth = this.lineWidth
 		// if opacity==1, we draw solid lines, else we fill each HEALPix cell
-		if (this.opacity==1) ctx.strokeStyle = this.color;
+		if (this.opacity==1) ctx.strokeStyle = this.color
 		else {
-			ctx.fillStyle = this.color;
-			ctx.globalAlpha = this.opacity;
+			ctx.fillStyle = this.color
+			ctx.globalAlpha = this.opacity
 		}
 
-		ctx.beginPath();
+		ctx.beginPath()
 
-		var orderedKeys = [];
-		for (var k=0; k<768; k++) {
-			var mocCells = mocCellsIdxOrder3[k];
-			for (key in mocCells) {
-				orderedKeys.push(parseInt(key));
-			}
+		let orderedKeys = []
+		for (let k=0; k<768; k++) {
+			let mocCells = mocCellsIdxOrder3[k]
+			for (let key in mocCells) orderedKeys.push(parseInt(key))
 		}
-		orderedKeys.sort(function(a, b) {return a - b;});
-		var norderMax = orderedKeys[orderedKeys.length-1];
+		orderedKeys.sort(function(a, b) {return a - b;})
+		let norderMax = orderedKeys[orderedKeys.length-1]
 
-		var nside, xyCorners, ipix;
-		var potentialVisibleHpxCellsOrder3 = this.view.getVisiblePixList(3, CooFrameEnum.J2000);
-		var visibleHpxCellsOrder3 = [];
+		let potentialVisibleHpxCellsOrder3 = this.view.getVisiblePixList(3, CooFrameEnum.J2000)
+
 		// let's test first all potential visible cells and keep only the one with a projection inside the view
-		for (var k=0; k<potentialVisibleHpxCellsOrder3.length; k++) {
-			var ipix = potentialVisibleHpxCellsOrder3[k];
-			xyCorners = getXYCorners(8, ipix, viewFrame, surveyFrame, width, height, largestDim, zoomFactor, projection);
-			if (xyCorners) {
-				visibleHpxCellsOrder3.push(ipix);
-			}
-		}
+		let visibleHpxCellsOrder3 = potentialVisibleHpxCellsOrder3
+			.filter( ipix => getXYCorners(8, ipix, viewFrame, surveyFrame, width, height, largestDim, zoomFactor, projection) )
 
-		var counter = 0;
-		var mocCells;
-		for (var norder=0; norder<=norderMax; norder++) {
-			nside = 1 << norder;
-
-			for (var i=0; i<visibleHpxCellsOrder3.length; i++) {
-				var ipixOrder3 = visibleHpxCellsOrder3[i];
-				mocCells = mocCellsIdxOrder3[ipixOrder3];
-				if (typeof mocCells[norder]==='undefined') {
-					continue;
-				}
-
+		let mocCells
+		for (let norder=0; norder<=norderMax; norder++) {
+			let nside = 1 << norder
+			for (let i=0; i<visibleHpxCellsOrder3.length; i++) {
+				let ipixOrder3 = visibleHpxCellsOrder3[i]
+				mocCells = mocCellsIdxOrder3[ipixOrder3]
+				if (typeof mocCells[norder]==='undefined') continue
 				if (norder<=3) {
-					for (var j=0; j<mocCells[norder].length; j++) {
-						ipix = mocCells[norder][j];
-						var factor = Math.pow(4, (3-norder));
-						var startIpix = ipix * factor;
-						for (var k=0; k<factor; k++) {
-							norder3Ipix = startIpix + k;
-							xyCorners = getXYCorners(8, norder3Ipix, viewFrame, surveyFrame, width, height, largestDim, zoomFactor, projection);
-							if (xyCorners) {
-								drawCorners(ctx, xyCorners);
-							}
+					for (let j=0; j<mocCells[norder].length; j++) {
+						let ipix = mocCells[norder][j]
+						let factor = Math.pow(4, (3-norder))
+						let startIpix = ipix * factor
+						for (let k=0; k<factor; k++) {
+							let norder3Ipix = startIpix + k
+							let xyCorners = getXYCorners(8, norder3Ipix, viewFrame, surveyFrame, width, height, largestDim, zoomFactor, projection)
+							if (xyCorners) drawCorners(ctx, xyCorners)
 						}
 					}
 				}
 				else {
-					for (var j=0; j<mocCells[norder].length; j++) {
-						ipix = mocCells[norder][j];
-						var parentIpixOrder3 = Math.floor(ipix/Math.pow(4, norder-3));
-						xyCorners = getXYCorners(nside, ipix, viewFrame, surveyFrame, width, height, largestDim, zoomFactor, projection);
-						if (xyCorners) {
-							drawCorners(ctx, xyCorners);
-						}
+					for (let j=0; j<mocCells[norder].length; j++) {
+						let ipix = mocCells[norder][j]
+						let parentIpixOrder3 = Math.floor(ipix/Math.pow(4, norder-3))
+						let xyCorners = getXYCorners(nside, ipix, viewFrame, surveyFrame, width, height, largestDim, zoomFactor, projection)
+						if (xyCorners) drawCorners(ctx, xyCorners)
 					}
 				}
 			}
 		}
 
-		if (this.opacity==1) ctx.stroke();
+		if (this.opacity==1) ctx.stroke()
 		else {
-			ctx.fill();
-			ctx.globalAlpha = 1.0;
+			ctx.fill()
+			ctx.globalAlpha = 1.0
 		}
 	}
 
