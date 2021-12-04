@@ -26,63 +26,40 @@ function uniq(a) { return [...new Set(self)]}
 
 // TODO: merge with what is done in View.getVisibleCells
 var _spVec = new SpatialVector();
-var getXYCorners = function(nside, ipix, viewFrame, surveyFrame, width, height, largestDim, zoomFactor, projection) {
-	var cornersXYView = [];
-	var cornersXY = [];
+function getXYCorners(nside, ipix, viewFrame, surveyFrame, width, height, largestDim, zoomFactor, projection) {
+	let cornersXYView = []
+	let cornersXY = []
 
-	var spVec = _spVec;
+	let spVec = _spVec
 
-	var corners = HealpixCache.corners_nest(ipix, nside);
-	for (var k=0; k<4; k++) {
-		spVec.setXYZ(corners[k].x, corners[k].y, corners[k].z);
-
+	let corners = HealpixCache.corners_nest(ipix, nside)
+	for (let k=0; k<4; k++) {
+		spVec.setXYZ(corners[k].x, corners[k].y, corners[k].z)
+		let radec = [spVec.ra(), spVec.dec()]
 		// need for frame transformation ?
 		if (surveyFrame && surveyFrame.system != viewFrame.system) {
-			if (surveyFrame.system == CooFrameEnum.SYSTEMS.J2000) {
-				var radec = CooConversion.J2000ToGalactic([spVec.ra(), spVec.dec()]);
-				lon = radec[0];
-				lat = radec[1];
-			}
-			else if (surveyFrame.system == CooFrameEnum.SYSTEMS.GAL) {
-				var radec = CooConversion.GalacticToJ2000([spVec.ra(), spVec.dec()]);
-				lon = radec[0];
-				lat = radec[1];
-			}
+			if (surveyFrame.system == CooFrameEnum.SYSTEMS.J2000)    radec = CooConversion.J2000ToGalactic(radec)
+			else if (surveyFrame.system == CooFrameEnum.SYSTEMS.GAL) radec = CooConversion.GalacticToJ2000(radec)
 		}
-		else {
-			lon = spVec.ra();
-			lat = spVec.dec();
-		}
-
-		cornersXY[k] = projection.project(lon, lat);
+		cornersXY[k] = projection.project(radec[0], radec[1])
 	}
 
-
-	if (cornersXY[0] == null ||  cornersXY[1] == null  ||  cornersXY[2] == null ||  cornersXY[3] == null ) return null;
+	if (cornersXY[0] == null ||  cornersXY[1] == null  ||  cornersXY[2] == null ||  cornersXY[3] == null ) return null
 
 	for (var k=0; k<4; k++) {
-		cornersXYView[k] = AladinUtils.xyToView(cornersXY[k].X, cornersXY[k].Y, width, height, largestDim, zoomFactor);
+		cornersXYView[k] = AladinUtils.xyToView(cornersXY[k].X, cornersXY[k].Y, width, height, largestDim, zoomFactor)
 	}
 
-	var indulge = 10;
 	// detect pixels outside view. Could be improved !
 	// we minimize here the number of cells returned
-	if( cornersXYView[0].vx<0 && cornersXYView[1].vx<0 && cornersXYView[2].vx<0 &&cornersXYView[3].vx<0) {
-		return null;
-	}
-	if( cornersXYView[0].vy<0 && cornersXYView[1].vy<0 && cornersXYView[2].vy<0 &&cornersXYView[3].vy<0) {
-		return null;
-	}
-	if( cornersXYView[0].vx>=width && cornersXYView[1].vx>=width && cornersXYView[2].vx>=width &&cornersXYView[3].vx>=width) {
-		return null;
-	}
-	if( cornersXYView[0].vy>=height && cornersXYView[1].vy>=height && cornersXYView[2].vy>=height &&cornersXYView[3].vy>=height) {
-		return null;
-	}
+	if( cornersXYView[0].vx<0 && cornersXYView[1].vx<0 && cornersXYView[2].vx<0 &&cornersXYView[3].vx<0) return null
+	if( cornersXYView[0].vy<0 && cornersXYView[1].vy<0 && cornersXYView[2].vy<0 &&cornersXYView[3].vy<0) return null
+	if( cornersXYView[0].vx>=width && cornersXYView[1].vx>=width && cornersXYView[2].vx>=width &&cornersXYView[3].vx>=width) return null
+	if( cornersXYView[0].vy>=height && cornersXYView[1].vy>=height && cornersXYView[2].vy>=height &&cornersXYView[3].vy>=height) return null
 
-	cornersXYView = AladinUtils.grow2(cornersXYView, 1);
-	return cornersXYView;
-};
+	cornersXYView = AladinUtils.grow2(cornersXYView, 1)
+	return cornersXYView
+}
 
 class MOC {
 	constructor(options) {
