@@ -295,61 +295,51 @@ class MOC {
 		}
 	}
 
-	reportChange() {
-		this.view && this.view.requestRedraw();
-	}
+	reportChange() { this.view && this.view.requestRedraw() }
 
 	show() {
-		if (this.isShowing) return;
-		this.isShowing = true;
-		this.reportChange();
+		if (this.isShowing) return
+		this.isShowing = true
+		this.reportChange()
 	}
 
 	hide() {
-		if (! this.isShowing) return;
-		this.isShowing = false;
-		this.reportChange();
+		if (! this.isShowing) return
+		this.isShowing = false
+		this.reportChange()
 	}
 
 	// Tests whether a given (ra, dec) point on the sky is within the current MOC object
 	//
 	// returns true if point is contained, false otherwise
 	contains(ra, dec) {
-		var hpxIdx = new HealpixIndex(Math.pow(2, this.order));
-		hpxIdx.init();
-		var polar = Utils.radecToPolar(ra, dec);
-		var ipix = hpxIdx.ang2pix_nest(polar.theta, polar.phi);
-		var ipixMapByOrder = {};
-		for (var curOrder=0; curOrder<=this.order; curOrder++) {
-			ipixMapByOrder[curOrder] = Math.floor(ipix / Math.pow(4, this.order - curOrder));
+		let hpxIdx = new HealpixIndex(Math.pow(2, this.order))
+		hpxIdx.init()
+		let polar = Utils.radecToPolar(ra, dec)
+		let ipix = hpxIdx.ang2pix_nest(polar.theta, polar.phi)
+		let ipixMapByOrder = {}
+		for (let curOrder=0; curOrder<=this.order; curOrder++) {
+			ipixMapByOrder[curOrder] = Math.floor(ipix / Math.pow(4, this.order - curOrder))
 		}
-
 		// first look for large HEALPix cells (order<3)
-		for (var ipixOrder3=0; ipixOrder3<768; ipixOrder3++) {
-			var mocCells = this._highResIndexOrder3[ipixOrder3];
-			for (var order in mocCells) {
+		for (let ipixOrder3=0; ipixOrder3<768; ipixOrder3++) {
+			let mocCells = this._highResIndexOrder3[ipixOrder3]
+			for (let order in mocCells) {
 				if (order<3) {
-					for (var k=mocCells[order].length; k>=0; k--) {
-						if (ipixMapByOrder[order] == mocCells[order][k]) {
-							return true;
-						}
+					for (let k=mocCells[order].length; k>=0; k--) {
+						if (ipixMapByOrder[order] == mocCells[order][k]) return true
 					}
 				}
 			}
 		}
-
 		// look for finer cells
-		var ipixOrder3 = ipixMapByOrder[3];
-		var mocCells = this._highResIndexOrder3[ipixOrder3];
-		for (var order in mocCells) {
-			for (var k=mocCells[order].length; k>=0; k--) {
-				if (ipixMapByOrder[order] == mocCells[order][k]) {
-					return true;
-				}
+		let ipixOrder3 = ipixMapByOrder[3]
+		let mocCells = this._highResIndexOrder3[ipixOrder3]
+		for (let order in mocCells) {
+			for (let k=mocCells[order].length; k>=0; k--) {
+				if (ipixMapByOrder[order] == mocCells[order][k]) return true
 			}
 		}
-
-		return false;
+		return false
 	}
-
 }
